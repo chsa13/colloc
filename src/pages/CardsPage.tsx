@@ -4,6 +4,7 @@ import { KIND_LABEL, type Kind } from '../content/schema';
 import { lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
 import { getState, useProgress } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
+import { Md } from '../ui/Md';
 import { Grade } from '../ui/Grade';
 import { LevelBadge, StatusDot } from '../ui/LevelSwitch';
 
@@ -48,21 +49,23 @@ export function CardsPage() {
     let pool = visible.filter(
       (f) => kinds.includes(f.kind) && (!topic || f.topic.id === topic) && !(f.kind === 'statement' && withProof.has(f.unit.id)),
     );
-    if (onlyWeak) pool = pool.filter((f) => ['weak', 'shaky'].includes(s.items[f.key]?.status ?? 'new'));
+    const weak = (key: string) => ['weak', 'shaky'].includes(s.items[key]?.status ?? 'new');
+    if (onlyWeak) pool = pool.filter((f) => weak(f.key) || (isCombined(f) && weak(`${f.unit.id}:statement`)));
     return orderByPriority(pool, (f) => f.key, s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]);
 
   const [pos, setPos] = useState(0);
-  const [open, setOpen] = useState(false);
+  // 0 — ответ скрыт; 1 — открыт первый блок; 2 — первый оценён, доказательство скрыто; 3 — открыто доказательство
+  const [step, setStep] = useState(0);
   useEffect(() => {
     setPos(0);
-    setOpen(false);
+    setStep(0);
   }, [filterKey]);
 
   const card: Facet | undefined = queue[pos];
   const next = () => {
-    setOpen(false);
+    setStep(0);
     setPos((p) => p + 1);
   };
 
@@ -71,7 +74,7 @@ export function CardsPage() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
-        setOpen(true);
+        setStep((x) => (x === 0 || x === 2 ? x + 1 : x));
       }
     };
     window.addEventListener('keydown', h);
@@ -130,14 +133,25 @@ export function CardsPage() {
           </div>
           <div className="card-q">
             <div className="card-kind">
-              <LevelBadge level={card.level} /> {card.kind === 'proof' && card.unit.statement ? 'Формулировка + доказательство' : KIND_LABEL[card.kind]}{' '}
-              <StatusDot status={st.items[card.key]?.status ?? 'new'} />
+              <LevelBadge level={card.level} />{' '}
+              {isCombined(card) ? (
+                <>
+                  Формулировка <StatusDot status={st.items[`${card.unit.id}:statement`]?.status ?? 'new'} /> + доказательство{' '}
+                  <StatusDot status={st.items[card.key]?.status ?? 'new'} />
+                </>
+              ) : (
+                <>
+                  {KIND_LABEL[card.kind]} <StatusDot status={st.items[card.key]?.status ?? 'new'} />
+                </>
+              )}
             </div>
             <h2>{card.unit.title}</h2>
             <div className="muted">{askFor(card)}</div>
           </div>
-          {!open ? (
-            <button className="reveal" onClick={() => setOpen(true)}>
+          {isCombined(card) ? (
+            <CombinedAnswer card={card} step={step} setStep={setStep} onDone={next} />
+          ) : step === 0 ? (
+            <button className="reveal" onClick={() => setStep(1)}>
               Показать ответ <kbd>пробел</kbd>
             </button>
           ) : (
@@ -145,11 +159,7 @@ export function CardsPage() {
               <FacetBody unit={card.unit} kind={card.kind} />
               <UsesLinks unit={card.unit} />
               <p className="muted small">Сравни со своим ответом и честно оцени:</p>
-              <Grade
-                itemKey={card.key}
-                alsoKeys={card.kind === 'proof' && card.unit.statement ? [`${card.unit.id}:statement`] : []}
-                onDone={next}
-              />
+              <Grade itemKey={card.key} onDone={next} />
             </>
           )}
           <div className="card-foot">
@@ -164,5 +174,75 @@ export function CardsPage() {
       )}
       <p className="muted small">Порядок: сначала «не знаю», затем новые, «частично», «знаю».</p>
     </div>
+  );
+}
+
+/** Теорема, у которой спрашиваются и формулировка, и доказательство. */
+function isCombined(f: Facet): boolean {
+  return f.kind === 'proof' && !!f.unit.statement;
+}
+
+const STATUS_WORD: Record<string, string> = { weak: 'не знаю', shaky: 'частично', known: 'знаю' };
+
+/** Два блока в одной карточке: формулировка и доказательство открываются и оцениваются по отдельности. */
+function CombinedAnswer({
+  card,
+  step,
+  setStep,
+  onDone,
+}: {
+  card: Facet;
+  step: number;
+  setStep: (s: number) => void;
+  onDone: () => void;
+}) {
+  const st = useProgress();
+  const stmtKey = `${card.unit.id}:statement`;
+  const stmtStatus = st.items[stmtKey]?.status;
+  return (
+    <>
+      <section className="card-part">
+        <div className="label">1. Формулировка</div>
+        {step === 0 ? (
+          <button className="reveal" onClick={() => setStep(1)}>
+            Показать формулировку <kbd>пробел</kbd>
+          </button>
+        ) : (
+          <>
+            <Md text={card.unit.statement!.text} />
+            {step === 1 ? (
+              <>
+                <p className="muted small">Как ты знаешь формулировку?</p>
+                <Grade itemKey={stmtKey} onDone={() => setStep(2)} />
+              </>
+            ) : (
+              <p className="small muted">
+                Оценка: <StatusDot status={stmtStatus ?? 'new'} /> {stmtStatus ? STATUS_WORD[stmtStatus] : '—'}{' '}
+                <button className="link small" onClick={() => setStep(1)}>
+                  изменить
+                </button>
+              </p>
+            )}
+          </>
+        )}
+      </section>
+      <section className="card-part">
+        <div className="label">2. Доказательство</div>
+        {step < 2 ? (
+          <div className="muted small">Сначала оцени формулировку, потом вспомни доказательство.</div>
+        ) : step === 2 ? (
+          <button className="reveal" onClick={() => setStep(3)}>
+            Показать доказательство <kbd>пробел</kbd>
+          </button>
+        ) : (
+          <>
+            <FacetBody unit={card.unit} kind="proof" withStatement={false} />
+            <UsesLinks unit={card.unit} />
+            <p className="muted small">Как ты знаешь доказательство?</p>
+            <Grade itemKey={card.key} onDone={onDone} />
+          </>
+        )}
+      </section>
+    </>
   );
 }

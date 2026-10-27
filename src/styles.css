@@ -924,3 +924,8 @@ select,
   color: var(--muted);
   display: block;
 }
+.card-part {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.7em;
+  margin-top: 0.7em;
+}
