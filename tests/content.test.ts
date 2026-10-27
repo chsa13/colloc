@@ -162,3 +162,21 @@ describe('lemmas', () => {
     }
   });
 });
+
+describe('statements', () => {
+  // Леммы нужны для доказательства, а не для формулировки: в формулировке теоремы их нет,
+  // они — отдельные единицы в unit.lemmas и показываются в блоке доказательства.
+  it('theorem statements do not embed lemmas', () => {
+    for (const u of units) {
+      if (u.aux || !u.statement) continue;
+      expect(/\*\*Лемм/.test(u.statement.text), `${u.id}: лемма внутри формулировки`).toBe(false);
+    }
+  });
+
+  it('proof steps of a theorem are not lemma steps (lemmas live in unit.lemmas)', () => {
+    for (const u of units) {
+      if (u.aux || !u.proof) continue;
+      for (const s of u.proof.steps) expect(/^Лемм[аы]\s*\d/.test(s.title), `${u.id}: шаг «${s.title}»`).toBe(false);
+    }
+  });
+});

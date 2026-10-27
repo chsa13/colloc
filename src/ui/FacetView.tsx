@@ -66,7 +66,7 @@ export function LemmaProofs({ unit }: { unit: Unit }) {
           <summary>
             <b>{l.title}</b>
           </summary>
-          {l.statement && <Md text={l.statement.text} />}
+          {l.statement && l.statement.text.replace(/\.$/, '') !== l.title && <Md text={l.statement.text} />}
           {l.proof && (
             <ol className="steps">
               {l.proof.steps.map((s, i) => (
