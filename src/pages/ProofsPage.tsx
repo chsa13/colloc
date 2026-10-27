@@ -95,7 +95,7 @@ export function ProofPage() {
         <div className="small muted">
           Как ты знаешь это доказательство? Сейчас: <StatusDot status={st.items[key]?.status ?? 'new'} />
         </div>
-        <Grade itemKey={key} current={st.items[key]?.status} />
+        <Grade itemKey={key} current={st.items[key]?.status} alsoKeys={unit.statement ? [`${unit.id}:statement`] : []} />
       </div>
       {nextProof && nextProof.unit.id !== unit.id && (
         <p>

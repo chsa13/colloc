@@ -7,14 +7,18 @@ export function Grade({
   onDone,
   current,
   hotkeys = true,
+  alsoKeys = [],
 }: {
   itemKey: string;
+  /** Дополнительные ключи, которым ставится та же оценка (формулировка вместе с доказательством). */
+  alsoKeys?: string[];
   onDone?: () => void;
   current?: Status;
   hotkeys?: boolean;
 }) {
   const go = (s: Exclude<Status, 'new'>) => {
     mark(itemKey, s);
+    for (const k of alsoKeys) mark(k, s);
     onDone?.();
   };
   useEffect(() => {

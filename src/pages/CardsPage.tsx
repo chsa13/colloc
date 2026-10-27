@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { KIND_LABEL, type Kind } from '../content/schema';
-import { orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
+import { lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
 import { getState, useProgress } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Grade } from '../ui/Grade';
@@ -13,12 +13,20 @@ const ASK: Record<Kind, string> = {
   proof: 'Докажи — вспомни шаги',
 };
 
+/** Что спросить по карточке: у теоремы с доказательством — формулировку и доказательство сразу. */
+function askFor(f: Facet): string {
+  if (f.kind !== 'proof') return ASK[f.kind];
+  const lemmas = lemmaChain(f.unit).length;
+  const head = f.unit.statement ? 'Сформулируй и докажи' : 'Докажи';
+  return lemmas ? `${head} (вместе с ${lemmas === 1 ? 'леммой' : 'леммами'})` : head;
+}
+
 export function CardsPage() {
   const [sp, setSp] = useSearchParams();
   const st = useProgress();
   const topic = sp.get('topic') ?? '';
   const kindParam = sp.get('kind');
-  const kinds: Kind[] = kindParam ? (kindParam.split(',') as Kind[]) : ['definition', 'statement'];
+  const kinds: Kind[] = kindParam ? (kindParam.split(',') as Kind[]) : ['definition', 'statement', 'proof'];
   const onlyWeak = sp.get('last') === '1';
 
   const update = (patch: Record<string, string | null>) => {
@@ -34,7 +42,12 @@ export function CardsPage() {
   const filterKey = `${st.mode}|${topic}|${kinds.join(',')}|${onlyWeak}`;
   const queue = useMemo(() => {
     const s = getState();
-    let pool = visibleFacets(s.mode).filter((f) => kinds.includes(f.kind) && (!topic || f.topic.id === topic));
+    const visible = visibleFacets(s.mode);
+    // Если доказательства в наборе, теорема спрашивается одной карточкой «сформулируй и докажи».
+    const withProof = new Set(kinds.includes('proof') ? visible.filter((f) => f.kind === 'proof').map((f) => f.unit.id) : []);
+    let pool = visible.filter(
+      (f) => kinds.includes(f.kind) && (!topic || f.topic.id === topic) && !(f.kind === 'statement' && withProof.has(f.unit.id)),
+    );
     if (onlyWeak) pool = pool.filter((f) => ['weak', 'shaky'].includes(s.items[f.key]?.status ?? 'new'));
     return orderByPriority(pool, (f) => f.key, s);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,10 +130,11 @@ export function CardsPage() {
           </div>
           <div className="card-q">
             <div className="card-kind">
-              <LevelBadge level={card.level} /> {KIND_LABEL[card.kind]} <StatusDot status={st.items[card.key]?.status ?? 'new'} />
+              <LevelBadge level={card.level} /> {card.kind === 'proof' && card.unit.statement ? 'Формулировка + доказательство' : KIND_LABEL[card.kind]}{' '}
+              <StatusDot status={st.items[card.key]?.status ?? 'new'} />
             </div>
             <h2>{card.unit.title}</h2>
-            <div className="muted">{ASK[card.kind]}</div>
+            <div className="muted">{askFor(card)}</div>
           </div>
           {!open ? (
             <button className="reveal" onClick={() => setOpen(true)}>
@@ -131,7 +145,11 @@ export function CardsPage() {
               <FacetBody unit={card.unit} kind={card.kind} />
               <UsesLinks unit={card.unit} />
               <p className="muted small">Сравни со своим ответом и честно оцени:</p>
-              <Grade itemKey={card.key} onDone={next} />
+              <Grade
+                itemKey={card.key}
+                alsoKeys={card.kind === 'proof' && card.unit.statement ? [`${card.unit.id}:statement`] : []}
+                onDone={next}
+              />
             </>
           )}
           <div className="card-foot">
