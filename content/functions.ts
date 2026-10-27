@@ -178,7 +178,7 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
           { title: 'Вывод', body: md`Последовательность Гейне была произвольной, значит, по Гейне $\lim\limits_{x\to x_0}g(x)=A$. $\blacksquare$` },
         ],
       },
-      uses: ['squeeze-seq', 'heine-limit-def'],
+      uses: ['squeeze-seq', 'heine-limit-def', 'cauchy-heine-equiv'],
     },
     {
       id: 'func-arithmetic',
@@ -193,6 +193,40 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
 3. если $B\ne0$, то $f/g$ определена в некоторой $\mathring U_{\delta_0}(x_0)$ и $\exists\lim\limits_{x\to x_0}\dfrac{f(x)}{g(x)}=\dfrac AB$.`,
       },
       notes: md`Через Гейне из теоремы для последовательностей. В п. 3 сначала: $|g(x)|\to|B|>0$, при $\varepsilon=|B|/2$ в некоторой $\mathring U_{\delta_0}(x_0)$ $g(x)\ne0$.`,
+    },
+    {
+      id: 'heine-lemma',
+      title: 'Лемма о пределах вдоль последовательностей Гейне',
+      source: 'Лонгрид 14, лемма 1',
+      aux: true,
+      pitfalls: ['Мало, что каждая f(xₙ) сходится: надо показать, что пределы для разных последовательностей одинаковы (чередование).'],
+      statement: {
+        level: 'advanced',
+        text: md`Пусть $f$ определена в $\mathring U_{\delta_0}(x_0)$ и для **любой** последовательности Гейне $\{x_n\}$ в точке $x_0$ существует $\lim\limits_{n\to\infty}f(x_n)$. Тогда все эти пределы равны одному числу $A$, и $\lim\limits_{x\to x_0}f(x)=A$ (по Гейне).`,
+      },
+      proof: {
+        level: 'advanced',
+        idea: md`Чередуем две последовательности Гейне — получаем третью; её предел обязан совпасть с пределами обеих половин.`,
+        steps: [
+          {
+            title: 'Две последовательности Гейне',
+            body: md`Пусть $\{x_n'\}$, $\{x_n''\}$ — последовательности Гейне, $f(x_n')\to A'$, $f(x_n'')\to A''$.`,
+          },
+          {
+            title: 'Чередуем',
+            body: md`$z=(x_1',x_1'',x_2',x_2'',\dots)$. Все $z_m\ne x_0$, и $z_m\to x_0$: если $x_n',x_n''\in U_\delta(x_0)$ при $n\ge N$, то $z_m\in U_\delta(x_0)$ при $m\ge2N$. Значит, $\{z_m\}$ — последовательность Гейне, и $\exists\lim f(z_m)=L$.`,
+          },
+          {
+            title: 'Половины — подпоследовательности',
+            body: md`$\{f(x_n')\}$ и $\{f(x_n'')\}$ — подпоследовательности $\{f(z_m)\}$ (нечётные и чётные номера), по лемме о подпоследовательности $A'=L=A''$.`,
+          },
+          {
+            title: 'Вывод',
+            body: md`Все пределы $f(x_n)$ равны одному $A$ — это и есть определение по Гейне: $\lim\limits_{x\to x_0}f(x)=A$. $\blacksquare$`,
+          },
+        ],
+      },
+      lemmas: ['subseq-limit'],
     },
     {
       id: 'cauchy-criterion-func',
@@ -222,11 +256,12 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in\mathring U_\delta(
           },
           {
             title: '(⇐) Лемма 14.1',
-            body: md`Если для любой последовательности Гейне $\lim f(x_n)$ существует, то все эти пределы равны и $\exists\lim\limits_{x\to x_0}f(x)$. $\blacksquare$`,
+            body: md`Итак, для любой последовательности Гейне $\lim f(x_n)$ существует и конечен. По лемме о пределах вдоль последовательностей Гейне все они равны одному $A\in\mathbb R$ и $\exists\lim\limits_{x\to x_0}f(x)=A$. $\blacksquare$`,
           },
         ],
       },
-      uses: ['cauchy-criterion-seq'],
+      lemmas: ['heine-lemma'],
+      uses: ['cauchy-criterion-seq', 'cauchy-heine-equiv'],
     },
     {
       id: 'cauchy-heine-equiv',

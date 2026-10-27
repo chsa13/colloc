@@ -74,14 +74,69 @@ export const seqLimit2: Topic = {
           { title: 'От противного', body: md`Пусть $A>B$.` },
           {
             title: 'Непересекающиеся окрестности',
-            body: md`По лемме найдутся $U_{\varepsilon_1}(A)$ и $U_{\varepsilon_2}(B)$, которые не пересекаются; так как $A>B$, вся $U_{\varepsilon_1}(A)$ лежит правее $U_{\varepsilon_2}(B)$.`,
+            body: md`По лемме о непересекающихся окрестностях (для $B<A$) найдутся $U_{\varepsilon_1}(A)$ и $U_{\varepsilon_2}(B)$, которые не пересекаются, причём каждая точка $U_{\varepsilon_2}(B)$ меньше каждой точки $U_{\varepsilon_1}(A)$.`,
           },
           { title: 'Определение предела', body: md`С некоторого номера (берём максимум из двух $N$) $x_n\in U_{\varepsilon_1}(A)$ и $y_n\in U_{\varepsilon_2}(B)$.` },
           { title: 'Противоречие', body: md`Значит, с этого номера $x_n>y_n$ — противоречит условию $x_n\le y_n$. $\blacksquare$` },
         ],
       },
+      lemmas: ['lemma-disjoint-nbhd'],
       notes: md`Доказательство (через непересекающиеся окрестности) работает и для пределов из $\overline{\mathbb R}$, но в лонгриде теорема сформулирована для сходящихся последовательностей.`,
       pitfalls: ['Строгое неравенство в пределе может стать нестрогим: 0 < 1/n, но lim 0 = lim 1/n = 0.'],
+    },
+    {
+      id: 'bernoulli',
+      title: 'Неравенство Бернулли',
+      source: 'Лонгрид 3, пример 5',
+      aux: true,
+      pitfalls: ['Условие t > −1 нужно: при умножении на 1 + t знак неравенства сохраняется только если 1 + t > 0.', 'Строгое неравенство — только при t ≠ 0 и n ≥ 2.'],
+      statement: {
+        level: 'basic',
+        text: md`Если $t>-1$ и $n\in\mathbb N$, то $(1+t)^n\ge1+nt$. Если к тому же $t\ne0$ и $n\ge2$, неравенство строгое: $(1+t)^n>1+nt$.`,
+      },
+      proof: {
+        level: 'basic',
+        idea: md`Индукция: умножаем неравенство на положительное $1+t$ и отбрасываем $nt^2\ge0$.`,
+        steps: [
+          { title: md`База $n=1$`, body: md`$1+t\ge1+t$ — верно.` },
+          {
+            title: md`Шаг: умножаем на $1+t>0$`,
+            body: md`Пусть $(1+t)^n\ge1+nt$. Так как $1+t>0$, знак сохраняется: $(1+t)^{n+1}\ge(1+nt)(1+t)=1+(n+1)t+nt^2$.`,
+          },
+          { title: md`Отбрасываем $nt^2\ge0$`, body: md`$1+(n+1)t+nt^2\ge1+(n+1)t$, значит, $(1+t)^{n+1}\ge1+(n+1)t$.` },
+          {
+            title: md`Строгость при $t\ne0$, $n\ge2$`,
+            body: md`При $t\ne0$ слагаемое $nt^2>0$, поэтому уже при переходе $n=1\to2$ неравенство строгое, а дальнейшие шаги строгость сохраняют. $\blacksquare$`,
+          },
+        ],
+      },
+    },
+    {
+      id: 'binomial-bound',
+      title: 'Оценка через бином: (1 + h)ⁿ ≥ n(n − 1)h²/2',
+      source: 'Лонгрид 10, примеры 4, 5 (бином Ньютона)',
+      aux: true,
+      pitfalls: ['Оставляем именно слагаемое C²ₙh²: линейного nh мало, чтобы получить n/aⁿ → 0.', 'Нужно h ≥ 0, иначе слагаемые бинома могут быть отрицательными.'],
+      statement: {
+        level: 'basic',
+        text: md`Если $h\ge0$ и $n\ge2$, то $(1+h)^n\ge\dfrac{n(n-1)}2h^2$.`,
+      },
+      proof: {
+        level: 'basic',
+        idea: md`В биноме Ньютона все слагаемые неотрицательны — оставляем одно, $C_n^2h^2$. Без бинома — индукция с неравенством Бернулли.`,
+        steps: [
+          {
+            title: 'Через бином Ньютона',
+            body: md`$(1+h)^n=\sum\limits_{k=0}^nC_n^kh^k$, все слагаемые $\ge0$, поэтому сумма не меньше слагаемого с $k=2$: $C_n^2h^2=\frac{n(n-1)}2h^2$.`,
+          },
+          { title: md`Индукцией: база $n=2$`, body: md`$(1+h)^2=1+2h+h^2\ge h^2=\frac{2\cdot1}2h^2$.` },
+          {
+            title: md`Индукцией: шаг`,
+            body: md`$(1+h)^{n+1}=(1+h)^n+h(1+h)^n\ge\frac{n(n-1)}2h^2+h(1+nh)\ge\frac{n(n-1)}2h^2+nh^2=\frac{(n+1)n}2h^2$ (во втором слагаемом — неравенство Бернулли). $\blacksquare$`,
+          },
+        ],
+      },
+      lemmas: ['bernoulli'],
     },
     {
       id: 'std-limits',
@@ -96,7 +151,7 @@ $$\lim_{n\to\infty}\sqrt[n]a=1\ (a>0);\quad \lim_{n\to\infty}\frac{\log_an}{n}=0
       },
       proof: {
         level: 'basic',
-        idea: md`Бином Ньютона / Бернулли оставляют одно слагаемое → оценка → теорема о зажатой. Для $a^n/n!$ — монотонность с некоторого номера + Вейерштрасс.`,
+        idea: md`Неравенство Бернулли или оценка через бином оставляют одно слагаемое → оценка → теорема о зажатой. Для $a^n/n!$ — монотонность с некоторого номера + Вейерштрасс.`,
         steps: [
           {
             title: md`$q^n\to0$ при $|q|<1$`,
@@ -108,11 +163,11 @@ $$\lim_{n\to\infty}\sqrt[n]a=1\ (a>0);\quad \lim_{n\to\infty}\frac{\log_an}{n}=0
           },
           {
             title: md`$\frac{a^n}{n!}\to0$: переход к пределу`,
-            body: md`В $x_{n+1}=\frac{|a|}{n+1}x_n$ слева $\to X$, справа $\to0\cdot X=0$, значит, $X=0$. Так как $-x_n\le\frac{a^n}{n!}\le x_n$, по теореме о зажатой $\frac{a^n}{n!}\to0$.`,
+            body: md`В $x_{n+1}=\frac{|a|}{n+1}x_n$ слева $\to X$ (сдвиг — подпоследовательность, лемма), справа $\to0\cdot X=0$, значит, $X=0$. Так как $-x_n\le\frac{a^n}{n!}\le x_n$, по теореме о зажатой $\frac{a^n}{n!}\to0$.`,
           },
           {
-            title: md`$\frac n{a^n}\to0$: бином`,
-            body: md`При $a>1$, $n\ge2$: $a^n=(1+(a-1))^n>C_n^2(a-1)^2=\frac{n(n-1)}2(a-1)^2$. Тогда $0<\frac n{a^n}<\frac2{(n-1)(a-1)^2}\to0$.`,
+            title: md`$\frac n{a^n}\to0$: оценка через бином`,
+            body: md`При $a>1$, $n\ge2$ по лемме с $h=a-1$: $a^n=(1+(a-1))^n\ge\frac{n(n-1)}2(a-1)^2$. Тогда $0<\frac n{a^n}\le\frac2{(n-1)(a-1)^2}\to0$, по теореме о зажатой $\frac n{a^n}\to0$.`,
           },
           {
             title: md`$\frac{n^k}{a^n}\to0$`,
@@ -120,7 +175,7 @@ $$\lim_{n\to\infty}\sqrt[n]a=1\ (a>0);\quad \lim_{n\to\infty}\frac{\log_an}{n}=0
           },
           {
             title: md`$\sqrt[n]n\to1$`,
-            body: md`$x_n=\sqrt[n]n-1>0$, $n=(1+x_n)^n>C_n^2x_n^2=\frac{n(n-1)}2x_n^2$, откуда $0<x_n<\sqrt{\frac2{n-1}}\to0$.`,
+            body: md`$x_n=\sqrt[n]n-1>0$ при $n\ge2$. По лемме с $h=x_n$: $n=(1+x_n)^n\ge\frac{n(n-1)}2x_n^2$, откуда $0<x_n\le\sqrt{\frac2{n-1}}\to0$; по теореме о зажатой $x_n\to0$.`,
           },
           {
             title: md`$\sqrt[n]a\to1$`,
@@ -132,6 +187,8 @@ $$\lim_{n\to\infty}\sqrt[n]a=1\ (a>0);\quad \lim_{n\to\infty}\frac{\log_an}{n}=0
           },
         ],
       },
+      lemmas: ['bernoulli', 'binomial-bound', 'subseq-limit'],
+      uses: ['squeeze-seq', 'weierstrass-monotone', 'seq-arithmetic'],
       notes: md`Следствие: $\sqrt[n]{n^k}=(\sqrt[n]n)^k\to1$. Шкала роста: $\log_a n\ll n^k\ll a^n\ll n!$.`,
     },
   ],
@@ -155,6 +212,32 @@ export const seqLimit3: Topic = {
 **Предельная точка** $\{x_n\}$ — элемент $a\in\overline{\mathbb R}$ такой, что **в любой его окрестности лежит бесконечно много членов** последовательности.`,
       },
       pitfalls: ['«Бесконечно много членов» — с разными номерами, а не значений: у xₙ ≡ 5 точка 5 — предельная.'],
+    },
+    {
+      id: 'subseq-limit',
+      title: 'Подпоследовательность имеет тот же предел',
+      source: 'Лонгрид 11, п. 1 (подпоследовательности)',
+      aux: true,
+      pitfalls: ['Ключевой факт — nₖ ≥ k; его нужно обосновать (индукция), а не просто сказать.'],
+      statement: {
+        level: 'basic',
+        text: md`Если $\lim\limits_{n\to\infty}x_n=a\in\overline{\mathbb R}$, то любая подпоследовательность $\{x_{n_k}\}$ тоже стремится к $a$. В частности, сдвиг $\{x_{n+1}\}$ имеет тот же предел.`,
+      },
+      proof: {
+        level: 'basic',
+        idea: md`Номера подпоследовательности растут не медленнее: $n_k\ge k$. Поэтому с номера $N$ все её члены — из хвоста исходной.`,
+        steps: [
+          {
+            title: md`$n_k\ge k$`,
+            body: md`Индукция: $n_1\ge1$; если $n_k\ge k$, то $n_{k+1}>n_k\ge k$, т. е. $n_{k+1}\ge k+1$ (номера натуральные и строго возрастают).`,
+          },
+          { title: 'Определение предела', body: md`Для любой $U_\varepsilon(a)$ $\exists N:\ \forall n\ge N\ x_n\in U_\varepsilon(a)$.` },
+          {
+            title: md`При $k\ge N$`,
+            body: md`$n_k\ge k\ge N$, поэтому $x_{n_k}\in U_\varepsilon(a)$. Значит, $x_{n_k}\to a$. Сдвиг $x_{n+1}$ — подпоследовательность с $n_k=k+1$. $\blacksquare$`,
+          },
+        ],
+      },
     },
     {
       id: 'limsup',
@@ -294,10 +377,10 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall m,n\ge N\ \ |x_m-x_n|<\varepsilon.
         level: 'basic',
         idea: md`(⇒) у другой точки $b$ найдётся окрестность, где лишь конечное число членов. (⇐) если не предел — вне окрестности бесконечно много членов, из них по Б–В получаем второй частичный предел.`,
         steps: [
-          { title: '(⇒) $a$ — частичный предел', body: md`Пусть $\lim x_n=a$. Любая подпоследовательность сходится к $a$, так что $a$ — частичный предел.` },
+          { title: '(⇒) $a$ — частичный предел', body: md`Пусть $\lim x_n=a$. По лемме любая подпоследовательность стремится к $a$, так что $a$ — частичный предел.` },
           {
             title: '(⇒) Другого нет',
-            body: md`Пусть $b\ne a$. Возьмём непересекающиеся $U_{\varepsilon_1}(a)$ и $U_{\varepsilon_2}(b)$. Вне $U_{\varepsilon_1}(a)$ лишь конечное число членов — значит, и в $U_{\varepsilon_2}(b)$ конечное число. $b$ не предельная точка.`,
+            body: md`Пусть $b\ne a$. По лемме о непересекающихся окрестностях возьмём непересекающиеся $U_{\varepsilon_1}(a)$ и $U_{\varepsilon_2}(b)$. Вне $U_{\varepsilon_1}(a)$ лишь конечное число членов — значит, и в $U_{\varepsilon_2}(b)$ конечное число. $b$ не предельная точка.`,
           },
           {
             title: '(⇐) От противного',
@@ -310,6 +393,7 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall m,n\ge N\ \ |x_m-x_n|<\varepsilon.
         ],
       },
       notes: md`Следствие: если есть два разных частичных предела, последовательность расходится.`,
+      lemmas: ['lemma-disjoint-nbhd', 'subseq-limit'],
       uses: ['bolzano-weierstrass'],
     },
     {
@@ -374,7 +458,7 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall m,n\ge N\ \ |x_m-x_n|<\varepsilon.
           },
           {
             title: 'Бернулли',
-            body: md`$\frac{n^2}{n^2-1}=1+\frac1{n^2-1}$, по Бернулли $(1+t)^{n+1}>1+(n+1)t$: $$\frac{x_{n-1}}{x_n}>\left(1+\frac{n+1}{n^2-1}\right)\frac{n-1}n=\frac n{n-1}\cdot\frac{n-1}n=1.$$`,
+            body: md`$\frac{n^2}{n^2-1}=1+\frac1{n^2-1}$, по неравенству Бернулли (строгому: $t=\frac1{n^2-1}>0$, показатель $n+1\ge2$) $(1+t)^{n+1}>1+(n+1)t$: $$\frac{x_{n-1}}{x_n}>\left(1+\frac{n+1}{n^2-1}\right)\frac{n-1}n=\frac n{n-1}\cdot\frac{n-1}n=1.$$`,
           },
           { title: 'Вейерштрасс', body: md`$x_n>0$ — ограничена снизу; убывающая ограниченная снизу сходится. Её предел обозначают $e$.` },
           {
@@ -384,7 +468,8 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall m,n\ge N\ \ |x_m-x_n|<\varepsilon.
         ],
       },
       notes: md`Попутно: $\left(1+\frac1n\right)^n<e<\left(1+\frac1n\right)^{n+1}$ для любого $n$.`,
-      uses: ['weierstrass-monotone'],
+      lemmas: ['bernoulli'],
+      uses: ['weierstrass-monotone', 'seq-arithmetic'],
     },
     {
       id: 'limsup-is-partial',
@@ -405,6 +490,7 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall m,n\ge N\ \ |x_m-x_n|<\varepsilon.
           { title: 'Вывод', body: md`$\varepsilon$ произвольно, значит, $M$ — предельная точка, т. е. частичный предел. Если $L$ не ограничено сверху, $\sup L=+\infty$ и аналогично. $\blacksquare$` },
         ],
       },
+      uses: ['partial-limit-equiv'],
     },
     {
       id: 'stolz',

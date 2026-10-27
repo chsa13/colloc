@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { orderByPriority, unitById, visibleFacets, visibleTopics } from '../engine/catalog';
+import { lemmaChain, orderByPriority, proofPlan, unitById, visibleFacets, visibleTopics } from '../engine/catalog';
 import { shuffle } from '../engine/ticket';
 import { getState, useProgress } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
@@ -36,7 +36,11 @@ export function ProofsPage() {
                 <li key={p.key}>
                   <StatusDot status={st.items[p.key]?.status ?? 'new'} /> <LevelBadge level={p.level} />{' '}
                   <Link to={`/proofs/${p.unit.id}`}>{p.unit.title}</Link>{' '}
-                  <span className="muted small">· {p.unit.proof!.steps.length} шагов</span>
+                  <span className="muted small">
+                    · {p.unit.proof!.steps.length} шагов
+                    {lemmaChain(p.unit).length > 0 && ` + ${lemmaChain(p.unit).length} лемм.`}
+                  </span>
+                  {p.unit.aux && <span className="tag">лемма</span>}
                 </li>
               ))}
             </ul>
@@ -105,6 +109,8 @@ export function ProofPage() {
 function StepsMode({ unitId }: { unitId: string }) {
   const { unit } = unitById.get(unitId)!;
   const p = unit.proof!;
+  const plan = proofPlan(unit);
+  const lemmas = lemmaChain(unit);
   const [stmtOpen, setStmtOpen] = useState(false);
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [shown, setShown] = useState(0);
@@ -123,29 +129,35 @@ function StepsMode({ unitId }: { unitId: string }) {
         {ideaOpen ? <Md text={p.idea} /> : <button onClick={() => setIdeaOpen(true)}>Показать идею</button>}
       </div>
       <div className="block">
+        {lemmas.length > 0 && (
+          <p className="small">
+            Сначала шаги {lemmas.length === 1 ? 'леммы' : 'лемм'}: {lemmas.map((l) => `«${l.title}»`).join(', ')} — их тоже надо доказать в ответе.
+          </p>
+        )}
         <div className="label">
-          3. Шаги ({shown}/{p.steps.length}){' '}
+          3. Шаги ({shown}/{plan.length}){' '}
           <label className="chk small">
             <input type="checkbox" checked={titlesOnly} onChange={(e) => setTitlesOnly(e.target.checked)} /> только названия
           </label>
         </div>
         <ol className="steps">
-          {p.steps.slice(0, shown).map((s, i) => (
+          {plan.slice(0, shown).map((s, i) => (
             <li key={i}>
+              {s.lemma && <span className="step-lemma">{lemmaLabel(s.lemma)}</span>}
               <div className="step-title">
                 <Md text={s.title} inline />
               </div>
               {!titlesOnly && <Md text={s.body} />}
             </li>
           ))}
-          {shown < p.steps.length && <li className="step-hidden">Вспомни, что дальше…</li>}
+          {shown < plan.length && <li className="step-hidden">Вспомни, что дальше…</li>}
         </ol>
-        {shown < p.steps.length ? (
+        {shown < plan.length ? (
           <div className="row">
             <button className="primary" onClick={() => setShown(shown + 1)}>
               Открыть шаг {shown + 1}
             </button>
-            <button onClick={() => setShown(p.steps.length)}>Открыть все</button>
+            <button onClick={() => setShown(plan.length)}>Открыть все</button>
           </div>
         ) : (
           <button onClick={() => setShown(0)}>Скрыть шаги и начать заново</button>
@@ -157,7 +169,7 @@ function StepsMode({ unitId }: { unitId: string }) {
 
 function OrderMode({ unitId }: { unitId: string }) {
   const { unit } = unitById.get(unitId)!;
-  const steps = unit.proof!.steps;
+  const steps = useMemo(() => proofPlan(unit), [unit]);
   const order = useMemo(() => shuffle(steps.map((_, i) => i)), [steps]);
   const [placed, setPlaced] = useState<number[]>([]);
   const [wrong, setWrong] = useState<number | null>(null);
@@ -180,6 +192,7 @@ function OrderMode({ unitId }: { unitId: string }) {
       <ol className="steps">
         {placed.map((i) => (
           <li key={i}>
+            {steps[i].lemma && <span className="step-lemma">{lemmaLabel(steps[i].lemma!)}</span>}
             <div className="step-title">
               <Md text={steps[i].title} inline />
             </div>
@@ -192,6 +205,7 @@ function OrderMode({ unitId }: { unitId: string }) {
             .filter((i) => !placed.includes(i))
             .map((i) => (
               <button key={i} className={`chip ${wrong === i ? 'chip-wrong' : ''}`} onClick={() => click(i)}>
+                {steps[i].lemma && <span className="step-lemma">лемма</span>}
                 <Md text={steps[i].title} inline />
               </button>
             ))}
@@ -211,4 +225,8 @@ function OrderMode({ unitId }: { unitId: string }) {
       )}
     </div>
   );
+}
+
+function lemmaLabel(title: string) {
+  return /^лемма/i.test(title) ? title : `Лемма: ${title}`;
 }

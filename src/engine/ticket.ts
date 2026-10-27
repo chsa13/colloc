@@ -46,7 +46,7 @@ export function generateTicket(mode: Mode): TicketQuestion[] {
   const byUnit = (f: Facet) => f.unit.id;
   const pick = (kind: Facet['kind'], level: Facet['level'], n: number) =>
     take(
-      facets.filter((f) => f.kind === kind && f.level === level),
+      facets.filter((f) => f.kind === kind && f.level === level && !f.unit.aux),
       n,
       usedUnits,
       byUnit,

@@ -94,3 +94,71 @@ describe('task bank', () => {
     for (const u of units) expect(u.pitfalls?.length ?? 0, u.id).toBeGreaterThan(0);
   });
 });
+
+describe('lemmas', () => {
+  const byId = new Map(units.map((u) => [u.id, u]));
+
+  it('every lemma exists and has a proof; no cycles', () => {
+    const visiting = new Set<string>();
+    const done = new Set<string>();
+    const dfs = (id: string, path: string[]) => {
+      if (done.has(id)) return;
+      expect(visiting.has(id), `цикл лемм: ${[...path, id].join(' -> ')}`).toBe(false);
+      visiting.add(id);
+      for (const l of byId.get(id)?.lemmas ?? []) {
+        const lu = byId.get(l);
+        expect(lu, `${id}: нет леммы ${l}`).toBeTruthy();
+        expect(lu!.proof, `${l}: у леммы нет доказательства`).toBeTruthy();
+        dfs(l, [...path, id]);
+      }
+      visiting.delete(id);
+      done.add(id);
+    };
+    for (const u of units) dfs(u.id, []);
+  });
+
+  it('auxiliary lemmas are used somewhere', () => {
+    const used = new Set(units.flatMap((u) => u.lemmas ?? []));
+    for (const u of units.filter((x) => x.aux)) expect(used.has(u.id), `${u.id} никем не используется`).toBe(true);
+  });
+
+  // Если доказательство ссылается на вспомогательный факт, его доказательство должно быть подключено.
+  const RULES: [RegExp, string][] = [
+    [/Бернулли/i, 'bernoulli'],
+    [/непересекающ/i, 'lemma-disjoint-nbhd'],
+    [/C_n\^2|бином/i, 'binomial-bound'],
+    [/подпоследовательност[ьи] сходящ|сдвиг/i, 'subseq-limit'],
+    [/лемм[аеуы] 14\.1|последовательностей Гейне все/i, 'heine-lemma'],
+    [/образ[ае]? промежутка/i, 'interval-image'],
+  ];
+  const chain = (u: (typeof units)[number]): Set<string> => {
+    const out = new Set<string>();
+    const go = (x: (typeof units)[number]) => {
+      for (const id of x.lemmas ?? []) if (!out.has(id)) { out.add(id); go(byId.get(id)!); }
+    };
+    go(u);
+    return out;
+  };
+
+  it('proofs that mention a lemma include its proof', () => {
+    for (const u of units) {
+      if (!u.proof) continue;
+      const text = [u.proof.idea, ...u.proof.steps.flatMap((s) => [s.title, s.body])].join(' ');
+      const have = chain(u);
+      for (const [re, id] of RULES) {
+        if (id === u.id || !re.test(text)) continue;
+        // лемма, которая сама по себе и есть этот факт (например, оценка через бином), не обязана ссылаться на себя
+        expect(have.has(id), `${u.id} упоминает «${re.source}», но не подключает лемму ${id}`).toBe(true);
+      }
+    }
+  });
+
+  it('no proof cites a lemma by name without proving it', () => {
+    for (const u of units) {
+      if (!u.proof) continue;
+      for (const s of u.proof.steps) {
+        expect(/лемм[аеуы] об отделимости/i.test(s.body), `${u.id}: ссылка на лемму об отделимости`).toBe(false);
+      }
+    }
+  });
+});

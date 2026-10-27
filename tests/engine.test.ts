@@ -14,6 +14,7 @@ describe('ticket', () => {
       const units = qs.filter((q) => q.facet).map((q) => q.facet!.unit.id);
       expect(new Set(units).size).toBe(units.length);
       expect(qs.filter((q) => q.facet).every((q) => q.facet!.level === 'basic')).toBe(true);
+      expect(qs.some((q) => q.facet?.unit.aux)).toBe(false);
     }
   });
 

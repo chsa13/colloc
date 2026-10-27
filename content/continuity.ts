@@ -161,12 +161,16 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in E\ \ \ |x'-x''|<\d
         steps: [
           { title: md`Последовательность к $\sup$`, body: md`$C=\sup\limits_{[a;b]}f\le+\infty$. $\forall n\ \exists x_n\in[a;b]:\ f(x_n)\in U_{1/n}(C)$, значит, $f(x_n)\to C$.` },
           { title: 'Больцано–Вейерштрасс', body: md`$\{x_n\}\subset[a;b]$ ограничена — выделим $x_{n_k}\to x_0$. Предельный переход в $a\le x_{n_k}\le b$: $x_0\in[a;b]$.` },
-          { title: 'Непрерывность', body: md`$f(x_{n_k})\to f(x_0)$. С другой стороны, $\{f(x_{n_k})\}$ — подпоследовательность сходящейся к $C$, поэтому $f(x_{n_k})\to C$.` },
+          {
+            title: 'Непрерывность',
+            body: md`$f$ непрерывна в $x_0$: $\forall\varepsilon\ \exists\delta:\ |x-x_0|<\delta\Rightarrow|f(x)-f(x_0)|<\varepsilon$; с некоторого номера $|x_{n_k}-x_0|<\delta$, поэтому $f(x_{n_k})\to f(x_0)$. С другой стороны, $\{f(x_{n_k})\}$ — подпоследовательность сходящейся к $C$, по лемме $f(x_{n_k})\to C$; по единственности предела $f(x_0)=C$.`,
+          },
           { title: 'Вывод', body: md`$\sup f=C=f(x_0)$: $\sup<+\infty$ (ограничена сверху) и достигается в $x_0$. Для $\inf$ аналогично. $\blacksquare$` },
         ],
       },
       notes: md`Отрезок здесь существен. На $(0;1)$ функция $\frac1x$ неограничена, а $f(x)=x$ ограничена, но её $\sup=1$ и $\inf=0$ не принимаются.`,
-      uses: ['bolzano-weierstrass'],
+      lemmas: ['subseq-limit'],
+      uses: ['bolzano-weierstrass', 'seq-limit-ineq', 'limit-unique'],
     },
     {
       id: 'nested-segments',
@@ -188,7 +192,7 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in E\ \ \ |x'-x''|<\d
           },
           {
             title: 'Разделяющее число $C$',
-            body: md`Множество $\{a_p\}$ лежит левее $\{b_q\}$. По лемме об отделимости $\exists C:\ \forall p,q\ \ a_p\le C\le b_q$. Например, $C=\sup a_p$ (существует, так как $\{a_p\}$ ограничено сверху любым $b_q$; $C\le b_q$, так как $C$ — наименьшая верхняя грань).`,
+            body: md`Множество $\{a_p\}$ ограничено сверху (любым $b_q$), поэтому существует $C=\sup\limits_pa_p$ (у ограниченного сверху непустого множества есть точная верхняя грань). $a_p\le C$ — так как $C$ верхняя грань; $C\le b_q$ — так как каждое $b_q$ верхняя грань, а $C$ наименьшая. Итак, $\forall p,q\ \ a_p\le C\le b_q$.`,
           },
           { title: '$C$ — общая точка', body: md`При $p=q$: $a_q\le C\le b_q$, т. е. $C\in[a_q;b_q]$ для любого $q$.` },
           { title: 'Единственность: от противного', body: md`Пусть $b_k-a_k\to0$, но есть две общие точки $C<D$. Тогда $\forall k\ a_k\le C<D\le b_k$, откуда $b_k-a_k\ge D-C>0$.` },
@@ -222,12 +226,42 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in E\ \ \ |x'-x''|<\d
           { title: md`$a_n\to\xi$, $b_n\to\xi$`, body: md`$0\le\xi-a_n\le b_n-a_n\to0$ и $0\le b_n-\xi\le b_n-a_n\to0$ — по теореме о зажатой.` },
           {
             title: 'Непрерывность + предельный переход',
-            body: md`$f$ непрерывна в $\xi$, по Гейне $f(a_n)\to f(\xi)$, $f(b_n)\to f(\xi)$. Переходим к пределу в $f(a_n)\le C\le f(b_n)$: $f(\xi)\le C\le f(\xi)$, т. е. $f(\xi)=C$. $\blacksquare$`,
+            body: md`$f$ непрерывна в $\xi$: $\forall\varepsilon\ \exists\delta:\ |x-\xi|<\delta\Rightarrow|f(x)-f(\xi)|<\varepsilon$. С некоторого номера $|a_n-\xi|<\delta$ и $|b_n-\xi|<\delta$, значит, $f(a_n)\to f(\xi)$, $f(b_n)\to f(\xi)$. Переходим к пределу в $f(a_n)\le C\le f(b_n)$: $f(\xi)\le C\le f(\xi)$, т. е. $f(\xi)=C$. $\blacksquare$`,
           },
         ],
       },
       notes: md`Что отсюда следует: при $f(a)f(b)<0$ уравнение $f(x)=0$ имеет решение внутри $(a;b)$; вместе с теоремой Вейерштрасса — образ отрезка при непрерывной функции снова отрезок; у любого многочлена нечётной степени есть действительный корень (на $\pm\infty$ он принимает значения разных знаков).`,
       uses: ['nested-segments', 'squeeze-seq', 'seq-limit-ineq'],
+    },
+    {
+      id: 'interval-image',
+      title: 'Образ промежутка при непрерывной функции — промежуток',
+      source: 'Лонгрид 15, замечание после примера 12',
+      aux: true,
+      pitfalls: ['Нужна непрерывность на всём промежутке: у sign x на [−1; 1] образ {−1; 0; 1} — не промежуток.'],
+      statement: {
+        level: 'advanced',
+        text: md`Если $f$ непрерывна на числовом промежутке $X$, то $f(X)$ — числовой промежуток (или точка).`,
+      },
+      proof: {
+        level: 'advanced',
+        idea: md`Множество — промежуток, если вместе с любыми двумя точками содержит всё между ними. Это даёт теорема о промежуточных значениях.`,
+        steps: [
+          {
+            title: 'Что проверяем',
+            body: md`Множество $E\subset\mathbb R$ — промежуток (или точка) $\iff$ из $y_1,y_2\in E$, $y_1<y<y_2$ следует $y\in E$.`,
+          },
+          {
+            title: 'Берём прообразы',
+            body: md`Пусть $y_1=f(x_1)$, $y_2=f(x_2)$, $x_1,x_2\in X$, $y_1<y<y_2$. Отрезок между $x_1$ и $x_2$ лежит в $X$ (это промежуток), и $f$ на нём непрерывна.`,
+          },
+          {
+            title: 'Промежуточное значение',
+            body: md`По теореме о промежуточных значениях на этом отрезке есть $\xi$ с $f(\xi)=y$. Значит, $y\in f(X)$. $\blacksquare$`,
+          },
+        ],
+      },
+      uses: ['ivt'],
     },
     {
       id: 'inverse-function-thm',
@@ -256,11 +290,12 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in E\ \ \ |x'-x''|<\d
           },
           {
             title: 'Теорема 8',
-            body: md`$f(X)$ — промежуток (образ промежутка при непрерывной функции, по теореме о промежуточных значениях). По лемме 3 $f^{-1}$ строго монотонна на $f(X)$ и переводит промежуток $f(X)$ в промежуток $X$; по лемме 4 она непрерывна. $\blacksquare$`,
+            body: md`$f(X)$ — промежуток по лемме об образе промежутка. По лемме 3 $f^{-1}$ строго монотонна на $f(X)$ и переводит промежуток $f(X)$ в промежуток $X$; по лемме 4 она непрерывна. $\blacksquare$`,
           },
         ],
       },
-      uses: ['ivt', 'monotone-one-sided'],
+      lemmas: ['interval-image', 'monotone-one-sided'],
+      uses: ['ivt'],
     },
     {
       id: 'asymptote-criterion',

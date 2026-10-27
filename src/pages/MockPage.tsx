@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tasks } from '../../content';
 import { KIND_LABEL } from '../content/schema';
-import { facets, taskKey } from '../engine/catalog';
+import { facets, lemmaChain, taskKey } from '../engine/catalog';
 import { generateTicket, totals, type Section, type TicketQuestion } from '../engine/ticket';
 import { addMock, mark, useProgress, type Mode } from '../store/progress';
 import { FacetBody } from '../ui/FacetView';
@@ -279,7 +279,8 @@ export function MockPage() {
 function questionTitle(q: TicketQuestion): string {
   if (q.task) return '';
   const f = q.facet!;
-  return f.unit.title;
+  const lemmas = f.kind === 'proof' ? lemmaChain(f.unit) : [];
+  return lemmas.length ? `${f.unit.title} (вместе с ${lemmas.length === 1 ? 'леммой' : 'леммами'}: ${lemmas.map((l) => l.title).join('; ')})` : f.unit.title;
 }
 
 function TicketList({ qs }: { qs: TicketQuestion[] }) {

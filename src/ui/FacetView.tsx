@@ -1,14 +1,25 @@
 import { Link } from 'react-router-dom';
 import type { Kind, Unit } from '../content/schema';
 import { KIND_LABEL } from '../content/schema';
-import { levelVisible, unitById } from '../engine/catalog';
+import { lemmaChain, levelVisible, unitById } from '../engine/catalog';
 import type { Mode } from '../store/progress';
 import { useProgress } from '../store/progress';
 import { LevelBadge, StatusDot } from './LevelSwitch';
 import { Md } from './Md';
 
 /** Содержимое одной грани: текст определения/формулировки или доказательство по шагам. */
-export function FacetBody({ unit, kind, withStatement = true }: { unit: Unit; kind: Kind; withStatement?: boolean }) {
+export function FacetBody({
+  unit,
+  kind,
+  withStatement = true,
+  lemmasInline = true,
+}: {
+  unit: Unit;
+  kind: Kind;
+  withStatement?: boolean;
+  /** false — вместо доказательств лемм показать только ссылки на них */
+  lemmasInline?: boolean;
+}) {
   if (kind === 'proof') {
     const p = unit.proof!;
     return (
@@ -19,6 +30,7 @@ export function FacetBody({ unit, kind, withStatement = true }: { unit: Unit; ki
             <Md text={unit.statement.text} />
           </div>
         )}
+        {lemmasInline ? <LemmaProofs unit={unit} /> : <LemmaLinks unit={unit} />}
         <div className="idea">
           <span className="label">Идея</span> <Md text={p.idea} inline />
         </div>
@@ -42,11 +54,62 @@ export function FacetBody({ unit, kind, withStatement = true }: { unit: Unit; ki
   );
 }
 
+/** Доказательства лемм, которые нужно привести в ответе (перед основным доказательством). */
+export function LemmaProofs({ unit }: { unit: Unit }) {
+  const chain = lemmaChain(unit);
+  if (!chain.length) return null;
+  return (
+    <div className="lemmas">
+      <div className="label">Сначала докажи {chain.length === 1 ? 'лемму' : `леммы (${chain.length})`} — без них доказательство неполное</div>
+      {chain.map((l) => (
+        <details key={l.id} className="lemma" open>
+          <summary>
+            <b>{l.title}</b>
+          </summary>
+          {l.statement && <Md text={l.statement.text} />}
+          {l.proof && (
+            <ol className="steps">
+              {l.proof.steps.map((s, i) => (
+                <li key={i}>
+                  <div className="step-title">
+                    <Md text={s.title} inline />
+                  </div>
+                  <Md text={s.body} />
+                </li>
+              ))}
+            </ol>
+          )}
+        </details>
+      ))}
+      <div className="label">Основное доказательство</div>
+    </div>
+  );
+}
+
+export function LemmaLinks({ unit }: { unit: Unit }) {
+  const chain = lemmaChain(unit);
+  if (!chain.length) return null;
+  return (
+    <div className="lemma-links">
+      <span className="label">В ответе докажи и {chain.length === 1 ? 'лемму' : 'леммы'}:</span>{' '}
+      {chain.map((l, i) => {
+        const u = unitById.get(l.id)!;
+        return (
+          <span key={l.id}>
+            {i > 0 && ', '}
+            <Link to={`/topic/${u.topic.id}?u=${l.id}`}>{l.title}</Link>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function UsesLinks({ unit }: { unit: Unit }) {
   if (!unit.uses?.length) return null;
   return (
     <div className="uses">
-      <span className="label">Опирается на:</span>{' '}
+      <span className="label">Ссылается на теоремы:</span>{' '}
       {unit.uses.map((id, i) => {
         const u = unitById.get(id);
         if (!u) return null;
@@ -68,7 +131,9 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
   return (
     <article className="unit" id={`u-${unit.id}`}>
       <header className="unit-head">
-        <h3>{unit.title}</h3>
+        <h3>
+          {unit.title} {unit.aux && <span className="tag">лемма</span>}
+        </h3>
         <span className="muted small">{unit.source}</span>
       </header>
       {kinds.map((k) => {
@@ -88,7 +153,7 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
               )}
             </div>
             {visible ? (
-              <FacetBody unit={unit} kind={k} withStatement={false} />
+              <FacetBody unit={unit} kind={k} withStatement={false} lemmasInline={false} />
             ) : (
               <div className="muted small">Только продвинутый уровень — включи «+ продвинутый» вверху, чтобы увидеть.</div>
             )}

@@ -98,3 +98,37 @@ export function readiness(keys: string[], st: State): Readiness {
 export function score(r: Readiness): number {
   return r.total ? (r.known + r.shaky * 0.5) / r.total : 0;
 }
+
+/**
+ * Леммы, которые надо доказать вместе с доказательством unit (рекурсивно,
+ * сначала самые глубокие, без повторов).
+ */
+export function lemmaChain(unit: Unit): Unit[] {
+  const out: Unit[] = [];
+  const seen = new Set<string>([unit.id]);
+  const visit = (u: Unit) => {
+    for (const id of u.lemmas ?? []) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const l = unitById.get(id)?.unit;
+      if (!l) continue;
+      visit(l);
+      out.push(l);
+    }
+  };
+  visit(unit);
+  return out;
+}
+
+export interface PlanStep {
+  title: string;
+  body: string;
+  /** название леммы, если шаг из её доказательства */
+  lemma?: string;
+}
+
+/** Полный план ответа: шаги всех лемм, затем шаги самого доказательства. */
+export function proofPlan(unit: Unit): PlanStep[] {
+  const lemmaSteps = lemmaChain(unit).flatMap((l) => (l.proof?.steps ?? []).map((s) => ({ ...s, lemma: l.title })));
+  return [...lemmaSteps, ...(unit.proof?.steps ?? [])];
+}

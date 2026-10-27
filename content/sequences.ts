@@ -102,6 +102,35 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall n\ge N\ \ |x_n|<\varepsilon.$$`,
       notes: md`Бесконечно большая последовательность — расходящаяся.`,
     },
     {
+      id: 'lemma-disjoint-nbhd',
+      title: 'Лемма о непересекающихся окрестностях',
+      source: 'Лонгрид 9, лемма 2',
+      aux: true,
+      pitfalls: ['Надо разобрать и случаи с ±∞, а не только два числа.', 'Ссылка на рисунок — не доказательство: нужен явный радиус ε₀ = (b − a)/2.'],
+      statement: {
+        level: 'basic',
+        text: md`Если $a,b\in\overline{\mathbb R}$, $a<b$, то у них есть окрестности $U(a)$ и $U(b)$, которые не пересекаются, причём каждая точка $U(a)$ меньше каждой точки $U(b)$.`,
+      },
+      proof: {
+        level: 'basic',
+        idea: md`Для двух чисел — радиус в половину расстояния; если есть бесконечность — явные интервалы.`,
+        steps: [
+          {
+            title: md`Оба числа конечны`,
+            body: md`$\varepsilon_0=\frac{b-a}2>0$. Тогда $U_{\varepsilon_0}(a)=(a-\varepsilon_0;\,a+\varepsilon_0)$, $U_{\varepsilon_0}(b)=(b-\varepsilon_0;\,b+\varepsilon_0)$ и $a+\varepsilon_0=b-\varepsilon_0$: правый конец первой равен левому концу второй, интервалы открытые, поэтому любая точка первой меньше любой точки второй.`,
+          },
+          {
+            title: md`$a\in\mathbb R$, $b=+\infty$`,
+            body: md`Подходят $(a-1;\,a+1)$ и $(a+1;\,+\infty)$. Случай $a=-\infty$, $b\in\mathbb R$ симметричен: $(-\infty;\,b-1)$ и $(b-1;\,b+1)$.`,
+          },
+          {
+            title: md`$a=-\infty$, $b=+\infty$`,
+            body: md`Подходят $(-\infty;\,-1)$ и $(1;\,+\infty)$. $\blacksquare$`,
+          },
+        ],
+      },
+    },
+    {
       id: 'limit-unique',
       title: 'Теорема о единственности предела последовательности',
       source: 'Лонгрид 9, теорема 1',
@@ -114,14 +143,10 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall n\ge N\ \ |x_n|<\varepsilon.$$`,
         level: 'basic',
         idea: md`От противного: у двух разных точек есть непересекающиеся окрестности, а члены последовательности с некоторого номера должны лежать в обеих.`,
         steps: [
-          {
-            title: md`Лемма: у $a\ne b$ есть непересекающиеся окрестности`,
-            body: md`Для чисел $a<b$ берём радиус в половину расстояния, $\varepsilon_0=\frac{b-a}2$: окрестности $U_{\varepsilon_0}(a)$ и $U_{\varepsilon_0}(b)$ лишь касаются концами ($a+\varepsilon_0=b-\varepsilon_0$) и общих точек не имеют. Для числа $a$ и $+\infty$ годятся $(a-1;a+1)$ и $(a+2;+\infty)$; прочие пары разбираются так же.`,
-          },
-          { title: 'Предположим противное', body: md`Пусть $\{a_n\}$ имеет два предела $a\ne b$.` },
+          { title: 'Предположим противное', body: md`Пусть $\{a_n\}$ имеет два предела $a\ne b$, для определённости $a<b$.` },
           {
             title: 'Берём непересекающиеся окрестности',
-            body: md`По лемме $\exists\,\varepsilon_1,\varepsilon_2>0:\ U_{\varepsilon_1}(a)\cap U_{\varepsilon_2}(b)=\varnothing$.`,
+            body: md`По лемме о непересекающихся окрестностях $\exists\,\varepsilon_1,\varepsilon_2>0:\ U_{\varepsilon_1}(a)\cap U_{\varepsilon_2}(b)=\varnothing$.`,
           },
           {
             title: 'Применяем определение предела дважды',
@@ -133,6 +158,7 @@ $$\forall\varepsilon>0\ \ \exists N:\ \forall n\ge N\ \ |x_n|<\varepsilon.$$`,
           },
         ],
       },
+      lemmas: ['lemma-disjoint-nbhd'],
     },
     {
       id: 'convergent-bounded',
