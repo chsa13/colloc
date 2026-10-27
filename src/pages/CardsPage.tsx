@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { KIND_LABEL, type Kind } from '../content/schema';
-import { lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
+import { facets, lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
+import { loadSession, saveSession, type CardSession } from '../store/cardSession';
 import { getState, useProgress } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Md } from '../ui/Md';
@@ -39,9 +40,10 @@ export function CardsPage() {
     setSp(next, { replace: true });
   };
 
-  // Очередь строится один раз на набор фильтров (оценки не перетасовывают её на ходу).
+  // Очередь строится один раз на набор фильтров (оценки не перетасовывают её на ходу)
+  // и сохраняется в браузере: после перезагрузки продолжаем с той же карточки.
   const filterKey = `${st.mode}|${topic}|${kinds.join(',')}|${onlyWeak}`;
-  const queue = useMemo(() => {
+  const buildQueue = (): string[] => {
     const s = getState();
     const visible = visibleFacets(s.mode);
     // Если доказательства в наборе, теорема спрашивается одной карточкой «сформулируй и докажи».
@@ -51,23 +53,27 @@ export function CardsPage() {
     );
     const weak = (key: string) => ['weak', 'shaky'].includes(s.items[key]?.status ?? 'new');
     if (onlyWeak) pool = pool.filter((f) => weak(f.key) || (isCombined(f) && weak(`${f.unit.id}:statement`)));
-    return orderByPriority(pool, (f) => f.key, s);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]);
+    return orderByPriority(pool, (f) => f.key, s).map((f) => f.key);
+  };
+  const fresh = (): CardSession => ({ fk: filterKey, keys: buildQueue(), pos: 0, step: 0, updated: Date.now() });
+  const restoreOrFresh = (): CardSession => loadSession(filterKey) ?? fresh();
 
-  const [pos, setPos] = useState(0);
-  // 0 — ответ скрыт; 1 — открыт первый блок; 2 — первый оценён, доказательство скрыто; 3 — открыто доказательство
-  const [step, setStep] = useState(0);
+  const [session, setSession] = useState<CardSession>(restoreOrFresh);
+  // Сменились фильтры — берём сохранённую для них сессию или начинаем новую.
+  if (session.fk !== filterKey) setSession(restoreOrFresh());
   useEffect(() => {
-    setPos(0);
-    setStep(0);
-  }, [filterKey]);
+    saveSession(session);
+  }, [session]);
+
+  const queue = session.keys.map((k) => facetByKey.get(k)).filter((f): f is Facet => !!f);
+  const pos = session.pos;
+  const step = session.step;
+  const setStep = (v: number | ((x: number) => number)) =>
+    setSession((s) => ({ ...s, step: typeof v === 'function' ? v(s.step) : v }));
+  const restart = () => setSession(fresh());
 
   const card: Facet | undefined = queue[pos];
-  const next = () => {
-    setStep(0);
-    setPos((p) => p + 1);
-  };
+  const next = () => setSession((s) => ({ ...s, pos: s.pos + 1, step: 0 }));
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -120,14 +126,20 @@ export function CardsPage() {
         <div className="empty">
           <h2>Круг пройден: {queue.length} карточек</h2>
           <p>
-            <button onClick={() => setPos(0)}>Ещё раз</button> <Link to="/mock">Пробный билет →</Link>
+            <button className="primary" onClick={restart}>
+              Начать заново
+            </button>{' '}
+            <Link to="/mock">Пробный билет →</Link>
           </p>
         </div>
       ) : (
         <div className="card">
           <div className="card-meta">
             <span>
-              {pos + 1} / {queue.length}
+              {pos + 1} / {queue.length}{' '}
+              <button className="link small" onClick={() => confirm('Начать заново? Порядок карточек пересоберётся: сначала слабые.') && restart()}>
+                начать заново
+              </button>
             </span>
             <span className="muted">{card.topic.title}</span>
           </div>
@@ -178,6 +190,8 @@ export function CardsPage() {
 }
 
 /** Теорема, у которой спрашиваются и формулировка, и доказательство. */
+const facetByKey = new Map(facets.map((f) => [f.key, f]));
+
 function isCombined(f: Facet): boolean {
   return f.kind === 'proof' && !!f.unit.statement;
 }
