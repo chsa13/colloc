@@ -65,7 +65,7 @@ export function App() {
       <footer className="foot">
         <NavLink to="/how">Как отвечать</NavLink>
         <NavLink to="/settings">Прогресс и настройки</NavLink>
-        <span className="muted">Материалы — по лонгридам курса ЦУ 2026/27. Прогресс хранится только в этом браузере.</span>
+        <span className="muted">Неофициальный конспект, составленный студентами по программе курса; не заменяет лонгриды. Прогресс хранится только в этом браузере.</span>
       </footer>
     </HashRouter>
   );
