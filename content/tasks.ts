@@ -117,8 +117,8 @@ export const tasks: Task[] = [
     type: 'true-false',
     points: 1,
     source: 'Демо-билет, вопрос 12',
-    prompt: md`Всякая ли сходящаяся последовательность ограничена? Всякая ли ограниченная последовательность сходится?`,
-    hints: [md`Первое — теорема. Для второго подумай про $(-1)^n$.`],
+    prompt: md`Следует ли из сходимости последовательности её ограниченность? А из ограниченности — сходимость?`,
+    hints: [md`Первое — известная теорема. Для второго подумай про $(-1)^n$.`],
     answer: md`1. **Да** — теорема об ограниченности сходящейся последовательности (кратко: при $\varepsilon=1$ с номера $N$ все члены в $(a-1;a+1)$, до $N$ — конечное число).
 2. **Нет**: $x_n=(-1)^n$ ограничена ($|x_n|\le1$), но имеет два частичных предела $\pm1$, значит, расходится.`,
   },
@@ -361,7 +361,7 @@ $k=\lim\limits_{x\to\pm\infty}\frac{x^2+1}{x^2-x}=1$, $b=\lim\limits_{x\to\pm\in
     type: 'prove',
     points: 1.5,
     source: 'Демо-билет, вопрос 14',
-    prompt: md`Для некоторой последовательности $\{x_n\}$ существуют $\alpha\in(0;1)$ и $C>0$ такие, что $\forall n\in\mathbb N\ \ |x_{n+1}-x_n|<C\alpha^n$. Можно ли утверждать, что $\{x_n\}$ сходится?`,
+    prompt: md`Про последовательность $\{x_n\}$ известно, что соседние члены сближаются не медленнее геометрической прогрессии: есть константы $C>0$ и $\alpha\in(0;1)$, для которых $|x_{n+1}-x_n|<C\alpha^n$ при всех $n\in\mathbb N$. Обязана ли $\{x_n\}$ сходиться?`,
     hints: [md`Проверь фундаментальность: оцени $|x_{n+p}-x_n|$ через сумму геометрической прогрессии.`],
     answer: md`**Да.** $|x_{n+p}-x_n|\le\sum_{k=n}^{n+p-1}|x_{k+1}-x_k|<C(\alpha^n+\dots+\alpha^{n+p-1})<\dfrac{C\alpha^n}{1-\alpha}$.
 Так как $\alpha^n\to0$, $\forall\varepsilon>0\ \exists N:\ \forall n\ge N\ \frac{C\alpha^n}{1-\alpha}<\varepsilon$, тогда $\forall p\ |x_{n+p}-x_n|<\varepsilon$ — последовательность фундаментальна, по критерию Коши сходится.`,
@@ -385,5 +385,671 @@ $k=\lim\limits_{x\to\pm\infty}\frac{x^2+1}{x^2-x}=1$, $b=\lim\limits_{x\to\pm\in
     prompt: md`Докажи, что для $a,b,c>0$: $(a+b+c)\left(\frac1a+\frac1b+\frac1c\right)\ge9$.`,
     hints: [md`Неравенство между средним арифметическим и средним гармоническим.`],
     answer: md`Среднее гармоническое $\le$ среднее арифметическое: $\dfrac3{\frac1a+\frac1b+\frac1c}\le\dfrac{a+b+c}3$, откуда $(a+b+c)\left(\frac1a+\frac1b+\frac1c\right)\ge9$. Равенство при $a=b=c$.`,
+  },
+
+  // ================= Расширение банка: лонгриды (темы 1, 2, 6, 9–11, 14, 15) и КР-2025 =================
+
+  // ---------- Множества и логика ----------
+  {
+    id: 'p-sets-diff',
+    topic: 'sets',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 1, задача 8',
+    prompt: md`Докажи, что для любых множеств $A,B,C$: $$A\setminus(B\setminus C)=(A\setminus B)\cup(A\cap C).$$`,
+    hints: [
+      md`Распиши принадлежность: $x\in A\setminus(B\setminus C)\iff x\in A\wedge\overline{(x\in B\wedge x\notin C)}$.`,
+      md`Отрицание конъюнкции — дизъюнкция отрицаний (де Морган), затем дистрибутивность.`,
+    ],
+    answer: md`$x\in A\setminus(B\setminus C)\iff x\in A\ \wedge\ x\notin B\setminus C\iff x\in A\wedge(x\notin B\ \vee\ x\in C)$ (де Морган)
+$\iff(x\in A\wedge x\notin B)\vee(x\in A\wedge x\in C)$ (дистрибутивность) $\iff x\in(A\setminus B)\cup(A\cap C)$. Множества состоят из одних и тех же элементов, значит, равны. $\blacksquare$`,
+  },
+  {
+    id: 'c-incl-excl',
+    topic: 'sets',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'Лонгрид 1, задача 13',
+    prompt: md`На курсе 180 человек. В шахматы играют 120 из них, в го — 95, а 30 человек не играют ни во что из этого. Сколько человек играют и в шахматы, и в го?`,
+    hints: [md`Сначала найди, сколько человек играет хотя бы в одну игру, потом примени формулу включений и исключений.`],
+    answer: md`Хотя бы в одну игру играют $180-30=150$ человек. $|C\cup G|=|C|+|G|-|C\cap G|$: $150=120+95-|C\cap G|$, откуда $|C\cap G|=65$.`,
+  },
+  {
+    id: 'p-equinumerous',
+    topic: 'sets',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 1, задача 18',
+    prompt: md`Докажи, что множества равномощны: а) $[0;1]$ и $[0;2]$; б) $(0;1)$ и $(1;+\infty)$.`,
+    hints: [md`Нужно предъявить взаимно однозначное соответствие. Подойдут линейная функция и $x\mapsto\frac1x$.`],
+    answer: md`а) $f(x)=2x$: каждому $x\in[0;1]$ соответствует единственное $2x\in[0;2]$; каждое $y\in[0;2]$ получается из $x=\frac y2\in[0;1]$; разным $x$ — разные $2x$. Это взаимно однозначное соответствие.
+б) $g(x)=\frac1x$: при $x\in(0;1)$ имеем $\frac1x\in(1;+\infty)$; любое $y>1$ получается из $x=\frac1y\in(0;1)$; $g$ строго убывает, значит, разным $x$ — разные значения. $\blacksquare$`,
+  },
+  {
+    id: 'q-logic-poly',
+    topic: 'logic',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 2, задача 10',
+    prompt: md`Утверждение: «у любого многочлена есть действительный корень». Запиши его отрицание в кванторах так, чтобы знак отрицания не стоял перед квантором, и приведи пример, подтверждающий отрицание.`,
+    hints: [md`Исходное: $\forall P\ \exists x\in\mathbb R:\ P(x)=0$. При отрицании $\forall\leftrightarrow\exists$, а $=$ меняется на $\ne$.`],
+    answer: md`$$\overline{\forall P\ \ \exists x\in\mathbb R:\ P(x)=0}\iff\exists P:\ \forall x\in\mathbb R\ \ P(x)\ne0.$$ Пример: $P(x)=x^2+1$.`,
+  },
+
+  // ---------- Последовательности ----------
+  {
+    id: 'q-not-bounded-below',
+    topic: 'sequences',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 6, задача 3',
+    prompt: md`Запиши в кванторах, что $\{x_n\}$ ограничена снизу, и построй отрицание этого утверждения.`,
+    hints: [md`Нужна константа, которая не больше всех членов. Затем поменяй кванторы и неравенство.`],
+    answer: md`Ограничена снизу: $\exists C\in\mathbb R:\ \forall n\in\mathbb N\ \ x_n\ge C$.
+Не ограничена снизу: $\forall C\in\mathbb R\ \ \exists n\in\mathbb N:\ x_n<C$.`,
+  },
+  {
+    id: 'q-not-monotone',
+    topic: 'sequences',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 6, задача 10',
+    prompt: md`Используя кванторы, сформулируй: а) $\{x_n\}$ **не** является строго возрастающей; б) $\{y_n\}$ **не** является убывающей; в) $\{z_n\}$ **не** является монотонной.`,
+    hints: [md`«Монотонна» = «возрастает» ИЛИ «убывает». Отрицание дизъюнкции — конъюнкция отрицаний.`],
+    answer: md`а) $\exists n\in\mathbb N:\ x_n\ge x_{n+1}$.
+б) $\exists n\in\mathbb N:\ y_n<y_{n+1}$.
+в) $\bigl(\exists n:\ z_n>z_{n+1}\bigr)\wedge\bigl(\exists m:\ z_m<z_{m+1}\bigr)$ — не возрастает и не убывает одновременно.`,
+  },
+  {
+    id: 'tf-bounded-ratio',
+    topic: 'sequences',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 6, задача 8',
+    prompt: md`$\{a_n\}$ ограничена, а $\{b_n\}$ удовлетворяет условию $\exists C>0:\ \forall n\ |b_n|>C$. Верно ли, что $\left\{\dfrac{a_n}{b_n}\right\}$ ограничена?`,
+    hints: [md`Оцени модуль частного: числитель сверху, знаменатель снизу.`],
+    answer: md`**Да.** $\exists A>0:\ \forall n\ |a_n|\le A$. Тогда $\forall n\ \left|\dfrac{a_n}{b_n}\right|=\dfrac{|a_n|}{|b_n|}<\dfrac AC$ — последовательность ограничена числом $\frac AC$.`,
+  },
+  {
+    id: 'c-sup-inf-sin',
+    topic: 'sequences',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 1, №1',
+    prompt: md`Функция $f(x)=\cos x$ рассматривается на интервале $\left(\frac\pi4;\frac{3\pi}2\right)$. Найди точную верхнюю и точную нижнюю грани множества её значений и выясни, есть ли у этого множества наибольший и наименьший элементы. Равенство для $\sup$ обоснуй по определению.`,
+    hints: [
+      md`Проследи, как меняется $\cos x$: от $\frac{\sqrt2}2$ (не включая) вниз до $-1$ в точке $\pi$, затем вверх к $0$.`,
+      md`Для $\sup$ проверь: все значения меньше $\frac{\sqrt2}2$, и для любого $M'<\frac{\sqrt2}2$ найдётся значение больше $M'$.`,
+    ],
+    answer: md`Множество значений — $\left[-1;\frac{\sqrt2}2\right)$. $\inf=\min=\cos\pi=-1$; $\sup=\frac{\sqrt2}2$, но наибольшего значения нет.
+Обоснование $\sup$: при $x\in\left(\frac\pi4;\frac{3\pi}2\right)$ имеем $\cos x<\frac{\sqrt2}2$ — это верхняя граница. Для $M'<\frac{\sqrt2}2$ число $y=\frac12\left(\max\{M';0\}+\frac{\sqrt2}2\right)$ лежит в $\left(0;\frac{\sqrt2}2\right)$, т. е. является значением $\cos x$ при некотором $x\in\left(\frac\pi4;\frac\pi2\right)$, и $y>M'$.`,
+  },
+
+  // ---------- Предел последовательности, часть 1 ----------
+  {
+    id: 'p-def-2n',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 1, №2',
+    prompt: md`Пользуясь только определением предела, покажи, что $(0{,}8)^n\to0$ при $n\to\infty$.`,
+    hints: [md`Неравенство $(0{,}8)^n<\varepsilon$ решается логарифмированием по основанию $0{,}8<1$ — знак неравенства меняется.`],
+    answer: md`$|(0{,}8)^n-0|<\varepsilon\iff n\ln0{,}8<\ln\varepsilon\iff n>\log_{0{,}8}\varepsilon$ (делим на $\ln0{,}8<0$). Положим $N(\varepsilon)=\max\{1;\ \lfloor\log_{0{,}8}\varepsilon\rfloor+1\}$. Тогда $$\forall\varepsilon>0\ \exists N(\varepsilon):\ \forall n\ge N\ \ |(0{,}8)^n|<\varepsilon,$$ что и есть $\lim(0{,}8)^n=0$. $\blacksquare$`,
+  },
+  {
+    id: 'p-def-two',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 9, задача 2',
+    prompt: md`Докажи по определению: а) $\lim\limits_{n\to\infty}\dfrac n{2n+1}=\dfrac12$; б) $\lim\limits_{n\to\infty}\dfrac1{\sqrt n}=0$.`,
+    hints: [md`а) $\left|\frac n{2n+1}-\frac12\right|=\frac1{2(2n+1)}<\frac1{4n}$. б) $\frac1{\sqrt n}<\varepsilon\iff n>\frac1{\varepsilon^2}$.`],
+    answer: md`а) $\left|\dfrac n{2n+1}-\dfrac12\right|=\dfrac1{2(2n+1)}<\dfrac1{4n}<\varepsilon$ при $n>\frac1{4\varepsilon}$. $\forall\varepsilon>0$ берём $N=\left[\frac1{4\varepsilon}\right]+1$.
+б) $\left|\dfrac1{\sqrt n}\right|<\varepsilon\iff n>\dfrac1{\varepsilon^2}$. $\forall\varepsilon>0$ берём $N=\left[\frac1{\varepsilon^2}\right]+1$: $\forall n\ge N\ \frac1{\sqrt n}<\varepsilon$. $\blacksquare$`,
+  },
+  {
+    id: 'p-not-zero-def',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 9, задача 3',
+    prompt: md`Докажи по определению, что $\lim\limits_{n\to\infty}\bigl((-1)^n+1\bigr)n\ne0$.`,
+    hints: [
+      md`Запиши отрицание: $\exists\varepsilon>0:\ \forall N\ \exists n\ge N:\ |x_n|\ge\varepsilon$.`,
+      md`Посмотри на чётные номера.`,
+    ],
+    answer: md`Нужно: $\exists\varepsilon>0:\ \forall N\ \exists n\ge N:\ |x_n-0|\ge\varepsilon$. Возьмём $\varepsilon=1$. Для любого $N$ возьмём чётное $n=2N\ge N$: $x_n=2n\ge2>1$. Значит, $0$ — не предел. $\blacksquare$`,
+  },
+  {
+    id: 'tf-limit-variants',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 9, задача 4',
+    prompt: md`Для каждой записи реши, равносильна ли она тому, что $\lim\limits_{n\to\infty}x_n=a\in\mathbb R$:
+1) $\forall\varepsilon>0\ \exists N:\ \forall n>N\ \ |x_n-a|<\varepsilon$;
+2) $\forall\varepsilon>0\ \exists N:\ \forall n\ge N\ \ |x_n-a|<7\varepsilon$;
+3) $\forall\varepsilon>0\ \forall N\ \exists n\ge N:\ |x_n-a|<\varepsilon$;
+4) $\forall\varepsilon>0\ \exists N:\ \forall n\ge N\ \ |x_n-a|\le\varepsilon$;
+5) $\exists N:\ \forall\varepsilon>0\ \forall n\ge N\ \ |x_n-a|<\varepsilon$;
+6) $\forall\varepsilon>0\ \exists N:\ \forall n\ge N\ \ |x_n-a|<\varepsilon^3$;
+7) $\forall\varepsilon\in\mathbb R\ \exists N:\ \forall n\ge N\ \ |x_n-a|<\varepsilon$.`,
+    hints: [
+      md`Если $\varepsilon$ пробегает все положительные числа, то $7\varepsilon$ и $\varepsilon^3$ тоже пробегают все положительные числа.`,
+      md`Что означает запись, в которой $N$ выбран раньше $\varepsilon$? А запись с $\exists n$ вместо $\forall n$?`,
+    ],
+    answer: md`**Равносильны:** 1), 2), 4) (для данного $\varepsilon$ возьми $N$, отвечающий $\varepsilon/2$), 6).
+**Нет:** 3) — это лишь «$a$ — частичный предел» (пример $(-1)^n$, $a=1$); 5) — с некоторого номера все $x_n=a$; 7) при $\varepsilon\le0$ условие невыполнимо, запись ложна для любой последовательности.`,
+  },
+  {
+    id: 'p-limit-positive',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 9, задача 5',
+    prompt: md`Докажи, что если $\lim\limits_{n\to\infty}a_n=A>0$, то $\exists N:\ \forall n\ge N\ \ a_n>0$. Сформулируй аналог для $A>1$.`,
+    hints: [md`Подставь в определение предела $\varepsilon=A$.`],
+    answer: md`Возьмём $\varepsilon=A>0$: $\exists N:\ \forall n\ge N\ |a_n-A|<A$, т. е. $0<a_n<2A$. В частности, $a_n>0$.
+Аналог: если $A>1$, то с некоторого номера $a_n>1$ (берём $\varepsilon=A-1$). $\blacksquare$`,
+  },
+  {
+    id: 'p-sin-pi-n-2',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 9, задача 10',
+    prompt: md`Докажи, что последовательность $x_n=\sin\dfrac{\pi n}2$ расходится.`,
+    hints: [md`Выпиши первые члены: $1,0,-1,0,1,\dots$ Найди две подпоследовательности с разными пределами.`],
+    answer: md`$x_{4k+1}=\sin\left(\frac\pi2+2\pi k\right)=1\to1$, $x_{4k+3}=\sin\left(\frac{3\pi}2+2\pi k\right)=-1\to-1$. Два разных частичных предела $\Rightarrow$ по теореме о единственном частичном пределе $\{x_n\}$ не имеет предела, т. е. расходится.
+(Иначе через Коши: $\varepsilon=1$, $\forall N$ среди $x_N,x_{N+1},x_{N+2},x_{N+3}$ есть $1$ и $-1$, разность $2\ge\varepsilon$.)`,
+  },
+  {
+    id: 'tf-inf-small-ops',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 9, задача 16',
+    prompt: md`Верно ли, что:
+а) произведение двух бесконечно малых — бесконечно малая;
+б) произведение бесконечно малой на ограниченную — бесконечно малая;
+в) сумма бесконечно большой и ограниченной — бесконечно большая;
+г) произведение бесконечно большой на ограниченную — бесконечно большая?`,
+    hints: [md`Бесконечно малая сходится, значит, ограничена. Для г) подумай про ограниченную последовательность из нулей.`],
+    answer: md`а) **Да**: бесконечно малая сходится, значит, ограничена — сводится к б).
+б) **Да** — лемма 3 (свойства бесконечно малых).
+в) **Да**: $|y_n|\le C$. Для любого $M>0$ с некоторого номера $|x_n|>M+C$, тогда $|x_n+y_n|\ge|x_n|-|y_n|>M$.
+г) **Нет**: $x_n=n$, $y_n\equiv0$ — произведение $\equiv0$.`,
+  },
+  {
+    id: 'tf-inf-large-diff',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 9, задача 20',
+    prompt: md`$\{x_n\}$ и $\{y_n\}$ — бесконечно большие. Может ли $\lim\limits_{n\to\infty}(x_n-y_n)$: а) равняться $+\infty$; б) равняться $10$; в) равняться $-\infty$; г) не существовать?`,
+    hints: [md`Бери $x_n,y_n$ вида $n$, $n^2$, $n+10$, $n+(-1)^n$.`],
+    answer: md`Всё возможно — поэтому «$\infty-\infty$» неопределённость.
+а) $x_n=n^2$, $y_n=n$; б) $x_n=n+10$, $y_n=n$; в) $x_n=n$, $y_n=n^2$; г) $x_n=n+(-1)^n$, $y_n=n$: разность $(-1)^n$ предела не имеет.`,
+  },
+  {
+    id: 'tf-inf-small-ratio',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 9, задача 22',
+    prompt: md`$\{x_n\}$ и $\{y_n\}$ — бесконечно малые, $y_n\ne0$. Может ли $\lim\limits_{n\to\infty}\dfrac{x_n}{y_n}$: а) равняться $0$; б) равняться $1$; в) равняться $\infty$; г) не существовать?`,
+    hints: [md`Комбинируй $\frac1n$, $\frac1{n^2}$, $\frac{(-1)^n}n$.`],
+    answer: md`Всё возможно — «$\frac00$» неопределённость.
+а) $x_n=\frac1{n^2}$, $y_n=\frac1n$; б) $x_n=y_n=\frac1n$; в) $x_n=\frac1n$, $y_n=\frac1{n^2}$; г) $x_n=\frac{(-1)^n}n$, $y_n=\frac1n$: отношение $(-1)^n$.`,
+  },
+  {
+    id: 'q-not-plus-inf',
+    topic: 'seq-limit-1',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 9, определение 5',
+    prompt: md`Запиши в кванторах: $\lim\limits_{n\to\infty}x_n\ne+\infty$. Приведи пример неограниченной сверху последовательности, для которой это верно.`,
+    hints: [md`$\lim x_n=+\infty$: $\forall M>0\ \exists N:\ \forall n\ge N\ x_n>M$.`],
+    answer: md`$$\exists M>0:\ \forall N\ \ \exists n\ge N:\ x_n\le M.$$ Пример: $x_n=n\bigl(1+(-1)^n\bigr)$ — не ограничена сверху, но при нечётных $n$ равна $0\le M$ для любого $M>0$.`,
+  },
+
+  // ---------- Предел последовательности, часть 2 ----------
+  {
+    id: 'c-recurrent',
+    topic: 'seq-limit-2',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 1, №5',
+    prompt: md`Последовательность задана рекуррентно: $a_1=6$, $a_{n+1}=\sqrt{8+2a_n}$. Докажи, что у неё есть предел, и вычисли его.`,
+    hints: [
+      md`Кандидат в предел — неотрицательный корень уравнения $A=\sqrt{8+2A}$. Покажи по индукции, что все члены не меньше этого числа.`,
+      md`Потом проверь монотонность и сошлись на теорему Вейерштрасса.`,
+    ],
+    answer: md`Кандидат: $A^2=8+2A$, $A=4$.
+1. **Оценка снизу** по индукции: $a_1=6\ge4$; из $a_n\ge4$ следует $a_{n+1}\ge\sqrt{8+8}=4$.
+2. **Убывание**: $a_{n+1}\le a_n\iff8+2a_n\le a_n^2\iff(a_n-4)(a_n+2)\ge0$, что верно при $a_n\ge4$.
+3. Убывающая и ограниченная снизу последовательность имеет конечный предел $A$ (Вейерштрасс).
+4. Переход к пределу в рекуррентной формуле: $A=\sqrt{8+2A}$, откуда $A\in\{4;-2\}$; из $a_n\ge4$ получаем $A\ge4$, значит, $\lim a_n=4$.`,
+  },
+  {
+    id: 'tf-squeeze-variants',
+    topic: 'seq-limit-2',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 10, задачи 7, 8',
+    prompt: md`Пусть $\lim x_n=A$, $\lim z_n=C$.
+а) Останется ли верной теорема о зажатой (при $A=C$), если неравенства строгие: $x_n<y_n<z_n$?
+б) …если $x_n\le y_n\le z_n$ лишь начиная с некоторого номера?
+в) Верно ли, что из $x_n\le y_n\le z_n$ при $A<C$ следует $A\le\lim y_n\le C$?`,
+    hints: [md`Строгое неравенство влечёт нестрогое; конечное число членов на предел не влияет. В в) — существует ли вообще $\lim y_n$?`],
+    answer: md`а) **Да**: из строгих неравенств следуют нестрогие.
+б) **Да**: отбрасывание конечного числа членов не меняет пределов.
+в) **Нет**, $\lim y_n$ может не существовать: $x_n=-1$, $y_n=(-1)^n$, $z_n=1$. Верно так: **если** $\lim y_n$ существует, то $A\le\lim y_n\le C$ (по теореме о предельном переходе в неравенствах).`,
+  },
+
+  // ---------- Предел последовательности, часть 3 ----------
+  {
+    id: 'c-partial-example',
+    topic: 'seq-limit-3',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 1, №3',
+    prompt: md`Построй последовательность, у которой множество частичных пределов в точности равно $\{-1;\ 5;\ +\infty;\ -\infty\}$. Объясни, почему других частичных пределов нет.`,
+    hints: [md`Номера удобно разбить на четыре класса по остатку от деления на 4.`],
+    answer: md`$x_{4k}=-1$, $x_{4k-1}=5$, $x_{4k-2}=k$, $x_{4k-3}=-k$. Четыре подпоследовательности дают пределы $-1$, $5$, $+\infty$, $-\infty$. Любая подпоследовательность $\{x_n\}$ содержит бесконечно много членов хотя бы одного класса, поэтому её предел (если есть) совпадает с одним из этих четырёх — других частичных пределов нет.`,
+  },
+  {
+    id: 'p-cauchy-sum',
+    topic: 'seq-limit-3',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 1, №6',
+    prompt: md`Сходится ли последовательность $$s_n=\sum_{k=1}^n\frac{3+4\cos5k}{(\sqrt2)^k}\ ?$$`,
+    hints: [
+      md`Сумму в явном виде не найти — проверь фундаментальность (критерий Коши).`,
+      md`Числитель по модулю не больше $7$; хвост оценивается геометрической прогрессией со знаменателем $\frac1{\sqrt2}$.`,
+    ],
+    answer: md`**Сходится.** Обозначим $q=\frac1{\sqrt2}\in(0;1)$. Для любых $n,p$: $$|s_{n+p}-s_n|\le\sum_{k=n+1}^{n+p}\frac{|3+4\cos5k|}{(\sqrt2)^k}\le7\sum_{k=n+1}^{n+p}q^k<\frac{7q^{n+1}}{1-q}.$$ Правая часть стремится к нулю и не зависит от $p$, поэтому $\forall\varepsilon>0\ \exists N:\ \forall n\ge N\ \forall p\in\mathbb N\ |s_{n+p}-s_n|<\varepsilon$. Последовательность фундаментальна и по критерию Коши сходится.`,
+  },
+  {
+    id: 'tf-cauchy-variant',
+    topic: 'seq-limit-3',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 11, задача 12',
+    prompt: md`Верно ли, что если $\forall\varepsilon>0\ \exists N:\ \forall n>N\ |x_n-x_N|<\varepsilon$, то $\{x_n\}$ фундаментальна?`,
+    hints: [md`Сравни $x_n$ и $x_m$ через «опорный» член $x_N$.`],
+    answer: md`**Да.** Для $\varepsilon>0$ возьмём $N$ из условия для $\frac\varepsilon2$. При $m,n\ge N$: $|x_n-x_m|\le|x_n-x_N|+|x_N-x_m|<\frac\varepsilon2+\frac\varepsilon2=\varepsilon$ (при $n=N$ или $m=N$ соответствующее слагаемое равно нулю). Это определение фундаментальности.`,
+  },
+
+  // ---------- Предел функции ----------
+  {
+    id: 'q-func-limits',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 14, задача 6',
+    prompt: md`Сформулируй в кванторах и неравенствах: а) $\lim\limits_{x\to-0}f(x)=0$; б) $\lim\limits_{x\to-\infty}f(x)=\infty$; в) $\lim\limits_{x\to2+0}f(x)=+\infty$.`,
+    hints: [md`$x\to-0$ — это $x\to0$ слева: $-\delta<x<0$. Окрестность $-\infty$: $x<-\delta$. Окрестность $\infty$ для значений: $|f(x)|>\varepsilon$.`],
+    answer: md`а) $\forall\varepsilon>0\ \exists\delta>0:\ \forall x:\ -\delta<x<0\ \ |f(x)|<\varepsilon$.
+б) $\forall\varepsilon>0\ \exists\delta>0:\ \forall x:\ x<-\delta\ \ |f(x)|>\varepsilon$.
+в) $\forall\varepsilon>0\ \exists\delta>0:\ \forall x:\ 2<x<2+\delta\ \ f(x)>\varepsilon$.`,
+  },
+  {
+    id: 'q-func-limits-neg',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 14, задача 6',
+    prompt: md`Сформулируй в кванторах и неравенствах: а) $\lim\limits_{x\to-0}f(x)\ne0$; б) $\lim\limits_{x\to-\infty}f(x)\ne\infty$; в) $\lim\limits_{x\to2+0}f(x)\ne+\infty$.`,
+    hints: [md`Сначала запиши утверждение с «$=$», затем замени $\forall\leftrightarrow\exists$ и отрицай последнее неравенство.`],
+    answer: md`а) $\exists\varepsilon>0:\ \forall\delta>0\ \exists x:\ (-\delta<x<0)\wedge(|f(x)|\ge\varepsilon)$.
+б) $\exists\varepsilon>0:\ \forall\delta>0\ \exists x:\ (x<-\delta)\wedge(|f(x)|\le\varepsilon)$.
+в) $\exists\varepsilon>0:\ \forall\delta>0\ \exists x:\ (2<x<2+\delta)\wedge(f(x)\le\varepsilon)$.`,
+  },
+  {
+    id: 'q-not-heine',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'quantifiers',
+    points: 1,
+    source: 'Лонгрид 14, определения 3, 4',
+    prompt: md`Запиши на языке последовательностей (по Гейне), что $\lim\limits_{x\to x_0}f(x)\ne A$. Почему для доказательства отсутствия предела удобно взять **две** последовательности Гейне?`,
+    hints: [md`По Гейне: $\forall\{x_n\}$ (Гейне в $x_0$) $f(x_n)\to A$. Отрицай квантор по последовательностям.`],
+    answer: md`$$\exists\{x_n\}:\ \bigl(x_n\to x_0\bigr)\wedge\bigl(\forall n\ x_n\ne x_0\bigr)\wedge\bigl(f(x_n)\not\to A\bigr).$$ Если найдены две последовательности Гейне с $f(x_n')\to B$, $f(x_n'')\to C$, $B\ne C$, то для любого $A$ хотя бы одна из них даёт $f(x_n)\not\to A$ — значит, предела нет вообще.`,
+  },
+  {
+    id: 'p-def-func-linear',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'КР-2025, КР 2, вариант 1, №2',
+    prompt: md`По определению Коши покажи, что $\lim\limits_{x\to-1}(5x+2)=-3$.`,
+    hints: [md`Расстояние до предела: $|(5x+2)+3|=5|x+1|$. Отсюда видно, каким взять $\delta$.`],
+    answer: md`Для произвольного $\varepsilon>0$ положим $\delta=\frac\varepsilon5$. При $0<|x+1|<\delta$: $|(5x+2)-(-3)|=5|x+1|<5\delta=\varepsilon$. Это и требовалось: $\forall\varepsilon>0\ \exists\delta>0:\ \forall x\ \bigl(0<|x+1|<\delta\Rightarrow|(5x+2)+3|<\varepsilon\bigr)$. $\blacksquare$`,
+  },
+  {
+    id: 'p-sin3x',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 14, задача 10',
+    prompt: md`Докажи, что $\lim\limits_{x\to+\infty}\cos2x$ не существует.`,
+    hints: [md`По Gейне достаточно двух последовательностей $x_n\to+\infty$, на которых $\cos2x_n$ стремится к разным числам.`],
+    answer: md`$x_n=\pi n\to+\infty$: $\cos2x_n=\cos2\pi n=1$. $x_n'=\frac\pi4+\pi n\to+\infty$: $\cos2x_n'=\cos\left(\frac\pi2+2\pi n\right)=0$. Значения стремятся к $1$ и к $0$ — по определению Gейне предела на $+\infty$ нет.`,
+  },
+  {
+    id: 'tf-func-sum-nolimit',
+    topic: 'func-limit',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 14, задачи 17, 18',
+    prompt: md`а) $f$ и $g$ не имеют предела в точке $x_0$. Следует ли, что $f+g$ и $f\cdot g$ не имеют предела?
+б) $\exists\lim\limits_{x\to x_0}f(x)\in\mathbb R$, а $\lim\limits_{x\to x_0}g(x)$ не существует. Следует ли, что не существуют пределы $f+g$ и $f\cdot g$?`,
+    hints: [md`Для а) попробуй $f=\operatorname{sign}x$, $g=-\operatorname{sign}x$ при $x_0=0$. Для б) сумму разбери от противного.`],
+    answer: md`а) **Нет.** $f(x)=\operatorname{sign}x$, $g(x)=-\operatorname{sign}x$ в $x_0=0$: $f+g\equiv0$, $f\cdot g=-1$ при $x\ne0$ — пределы есть.
+б) Для суммы — **да**: если бы $\exists\lim(f+g)$, то $g=(f+g)-f$ имела бы предел как разность. Для произведения — **нет**: $f(x)=x$, $g(x)=\operatorname{sign}x$ в нуле: $fg=|x|\to0$.`,
+  },
+  {
+    id: 'p-x-dirichlet',
+    topic: 'func-limit',
+    scales: ['red', 'black'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 14, задача 20',
+    prompt: md`Докажи, что функция $$f(x)=\begin{cases}x,&x\in\mathbb Q,\\0,&x\notin\mathbb Q\end{cases}$$ имеет предел только в точке $x=0$.`,
+    hints: [
+      md`В нуле: $0\le|f(x)|\le|x|$ — теорема о зажатой функции.`,
+      md`В точке $x_0\ne0$ — две последовательности Гейне: из рациональных и из иррациональных чисел.`,
+    ],
+    answer: md`**В нуле:** $-|x|\le f(x)\le|x|$ и $\pm|x|\to0$, по теореме о зажатой $\lim\limits_{x\to0}f(x)=0$.
+**В $x_0\ne0$:** в каждой $\mathring U_{1/n}(x_0)$ есть рациональное $x_n'$ и иррациональное $x_n''$ — обе последовательности Гейне. $f(x_n')=x_n'\to x_0$, $f(x_n'')=0\to0$, и $x_0\ne0$ — пределы разные, по Гейне предела нет. $\blacksquare$`,
+  },
+
+  // ---------- Непрерывность ----------
+  {
+    id: 'c-sign-variants',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 2, вариант 1, №3',
+    prompt: md`Исследуй на непрерывность в нуле и, если есть разрыв, укажи его тип: а) $|\operatorname{sign}x|$; б) $(2-x)\operatorname{sign}x$; в) $\operatorname{tg}x\cdot\operatorname{sign}x$.`,
+    hints: [md`Помни, что $\operatorname{sign}0=0$. Сравни односторонние пределы между собой и со значением в нуле.`],
+    answer: md`а) При $x\ne0$ значение $1$, в нуле $0$: предел $1$ есть, но $\ne f(0)$ — **устранимый** разрыв.
+б) Слева предел $-2$, справа $2$: конечные и разные — разрыв **первого рода**.
+в) Около нуля $f(x)=|\operatorname{tg}x|\to0$, и $f(0)=0$ — функция **непрерывна**.`,
+  },
+  {
+    id: 'c-params-cont',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 2, вариант 1, №6',
+    prompt: md`Найди все пары $(a;b)$, при которых функция $$f(x)=\begin{cases}x^2+4x+1,&x<1,\\ax+b,&x\ge1\end{cases}$$ непрерывна на всей прямой.`,
+    hints: [md`Проблемной может быть только точка стыка $x=1$: сравни предел слева со значением $f(1)$.`],
+    answer: md`На $(-\infty;1)$ и $(1;+\infty)$ функция — многочлен, она непрерывна. В точке $1$: $f(1)=f(1+0)=a+b$, $f(1-0)=1+4+1=6$. Непрерывность $\iff a+b=6$, т. е. $b=6-a$ при любом $a$.`,
+  },
+  {
+    id: 'c-x-sign-sin',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 2, вариант 1, №7',
+    prompt: md`Найди точки разрыва функции $f(x)=(x-\pi)\operatorname{sign}(\sin x)$ и определи их тип.`,
+    hints: [md`Знак $\sin x$ меняется только в точках $\pi n$. Особо посмотри на точку, где обнуляется множитель $x-\pi$.`],
+    answer: md`Вне точек $\pi n$ знак $\sin x$ постоянен на интервале, и $f=\pm(x-\pi)$ непрерывна. В $x=\pi n$ односторонние пределы равны $\pm(\pi n-\pi)$ с разными знаками.
+При $n=1$ оба предела равны $0=f(\pi)$ — **непрерывна**. При $n\ne1$ пределы конечны и различны ($\pi n-\pi\ne0$) — разрывы **первого рода**.`,
+  },
+  {
+    id: 'c-asymptotes-2',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'compute',
+    points: 1,
+    source: 'КР-2025, КР 2, вариант 1, №1',
+    prompt: md`Какие вертикальные и горизонтальные асимптоты есть у графика $f(x)=\dfrac{x^2-2x-3}{x^2-9}$?`,
+    hints: [md`Сократи дробь. В одном из нулей знаменателя предел окажется конечным.`],
+    answer: md`$f(x)=\dfrac{(x-3)(x+1)}{(x-3)(x+3)}=\dfrac{x+1}{x+3}$ при $x\ne\pm3$.
+В $x=3$ предел конечен ($\frac23$) — устранимый разрыв, асимптоты нет. В $x=-3$ функция уходит в бесконечность — **вертикальная** асимптота $x=-3$. При $x\to\pm\infty$ $f(x)\to1$ — **горизонтальная** асимптота $y=1$.`,
+  },
+  {
+    id: 'p-ivt-roots',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 15, задача 8',
+    prompt: md`Покажи, что у уравнения $x^5-4x=1$ по меньшей мере три действительных корня.`,
+    hints: [md`Рассмотри непрерывную функцию $g(x)=x^5-4x-1$ и подбери четыре целые точки с чередующимися знаками $g$.`],
+    answer: md`$g(x)=x^5-4x-1$ непрерывна на $\mathbb R$. $g(-2)=-25<0$, $g(-1)=2>0$, $g(0)=-1<0$, $g(2)=23>0$. По теореме о промежуточных значениях $g$ обращается в ноль на каждом из интервалов $(-2;-1)$, $(-1;0)$, $(0;2)$. Интервалы не пересекаются — корней не меньше трёх. $\blacksquare$`,
+  },
+  {
+    id: 'p-square-one',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 15, задача 10',
+    prompt: md`$f:(0;1)\to\mathbb R$ непрерывна и $f(x)^2=1$ для всех $x\in(0;1)$. Докажи, что $f\equiv1$ или $f\equiv-1$.`,
+    hints: [md`От противного: пусть $f(a)=1$, $f(b)=-1$. Что даёт теорема о промежуточных значениях на отрезке между $a$ и $b$?`],
+    answer: md`Значения $f$ — только $\pm1$. Пусть нашлись $a,b\in(0;1)$ с $f(a)=1$, $f(b)=-1$. $f$ непрерывна на отрезке с концами $a,b$ (он лежит в $(0;1)$), и $0$ между $-1$ и $1$ — по теореме о промежуточных значениях $\exists\xi:\ f(\xi)=0$, но $f(\xi)^2=1$. Противоречие. $\blacksquare$`,
+  },
+  {
+    id: 'p-periodic-half',
+    topic: 'continuity',
+    scales: ['red', 'black'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 15, задача 9',
+    prompt: md`$f$ непрерывна на $\mathbb R$ и периодична с периодом $T>0$. Докажи, что существует $x_0$ такое, что $f\left(x_0+\frac T2\right)=f(x_0)$.`,
+    hints: [md`Рассмотри $\varphi(x)=f\left(x+\frac T2\right)-f(x)$ и сравни $\varphi(0)$ и $\varphi\left(\frac T2\right)$.`],
+    answer: md`$\varphi(x)=f\left(x+\frac T2\right)-f(x)$ непрерывна. $\varphi(0)=f\left(\frac T2\right)-f(0)$, $\varphi\left(\frac T2\right)=f(T)-f\left(\frac T2\right)=f(0)-f\left(\frac T2\right)=-\varphi(0)$.
+Если $\varphi(0)=0$, берём $x_0=0$. Иначе $\varphi(0)$ и $\varphi\left(\frac T2\right)$ разных знаков, и по теореме о промежуточных значениях на $\left[0;\frac T2\right]$ есть $x_0$ с $\varphi(x_0)=0$. $\blacksquare$`,
+  },
+  {
+    id: 'tf-nested-intervals',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 15, задача 11',
+    prompt: md`Верно ли утверждение леммы о вложенных отрезках, если отрезки заменить интервалами: $(a_1;b_1)\supset(a_2;b_2)\supset\dots$?`,
+    hints: [md`Попробуй интервалы с общим левым концом.`],
+    answer: md`**Нет.** $\left(0;\frac1n\right)$ вложены и стягиваются, но общей точки нет: для любого $x>0$ при $n>\frac1x$ имеем $x\notin\left(0;\frac1n\right)$, а $0$ не лежит ни в одном.
+В доказательстве для отрезков общая точка $C=\sup a_p$ может совпасть с концом — для интервалов это и ломается.`,
+  },
+  {
+    id: 'p-sin-uniform',
+    topic: 'continuity',
+    scales: ['red'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 15, задача 17',
+    prompt: md`Докажи по определению, что $f(x)=\sin x$ равномерно непрерывна на $\mathbb R$.`,
+    hints: [md`$|\sin x'-\sin x''|=2\left|\sin\frac{x'-x''}2\right|\left|\cos\frac{x'+x''}2\right|\le|x'-x''|$.`],
+    answer: md`$|\sin x'-\sin x''|=2\left|\sin\dfrac{x'-x''}2\right|\cdot\left|\cos\dfrac{x'+x''}2\right|\le2\cdot\dfrac{|x'-x''|}2=|x'-x''|$ (так как $|\sin t|\le|t|$).
+$\forall\varepsilon>0$ возьмём $\delta=\varepsilon$: $\forall x',x''\in\mathbb R\ \ |x'-x''|<\delta\Rightarrow|\sin x'-\sin x''|<\varepsilon$. Одно $\delta$ на всю прямую. $\blacksquare$`,
+  },
+
+  // ================= Продвинутый уровень (только ⚫) =================
+  {
+    id: 'p-sqrt-uniform',
+    topic: 'continuity',
+    scales: ['black'],
+    type: 'prove',
+    points: 1,
+    source: 'Лонгрид 15, задача 18',
+    prompt: md`Докажи, что $f(x)=\sqrt x$ равномерно непрерывна на $[0;+\infty)$.`,
+    hints: [md`Докажи неравенство $|\sqrt{x'}-\sqrt{x''}|\le\sqrt{|x'-x''|}$.`],
+    answer: md`Пусть $x'\ge x''\ge0$. Тогда $\sqrt{x'}-\sqrt{x''}\le\sqrt{x'-x''}\iff\sqrt{x'}\le\sqrt{x''}+\sqrt{x'-x''}$; возведя в квадрат: $x'\le x'+2\sqrt{x''(x'-x'')}$ — верно. Итак, $|\sqrt{x'}-\sqrt{x''}|\le\sqrt{|x'-x''|}$.
+$\forall\varepsilon>0$ возьмём $\delta=\varepsilon^2$: $|x'-x''|<\delta\Rightarrow|\sqrt{x'}-\sqrt{x''}|<\varepsilon$. $\blacksquare$
+(Теорема Кантора здесь не применима напрямую: промежуток не отрезок.)`,
+  },
+  {
+    id: 'p-xsinx-not-uniform',
+    topic: 'continuity',
+    scales: ['black'],
+    type: 'prove',
+    points: 1.5,
+    source: 'Лонгрид 15, задача 20',
+    prompt: md`Исследуй $f(x)=x\sin x$ на равномерную непрерывность на $(0;+\infty)$.`,
+    hints: [
+      md`Отрицание: $\exists\varepsilon\ \forall\delta\ \exists x',x''$… Возьми $x'_n=2\pi n$, $x''_n=2\pi n+\frac1n$.`,
+      md`Для $0<t\le1$: $\sin t\ge\frac t2$.`,
+    ],
+    answer: md`**Не является.** $x'_n=2\pi n$, $x''_n=2\pi n+\frac1n$: $|x'_n-x''_n|=\frac1n\to0$. $f(x'_n)=0$, $f(x''_n)=\left(2\pi n+\frac1n\right)\sin\frac1n\ge2\pi n\cdot\frac1{2n}=\pi$.
+Возьмём $\varepsilon=1$: $\forall\delta>0$ при $\frac1n<\delta$ имеем $|x'_n-x''_n|<\delta$, но $|f(x'_n)-f(x''_n)|\ge\pi>\varepsilon$.`,
+  },
+  {
+    id: 'p-x2sin-uniform',
+    topic: 'continuity',
+    scales: ['black'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 15, задача 19',
+    prompt: md`Является ли $f(x)=x^2\sin\frac1x$ равномерно непрерывной на $(0;1)$?`,
+    hints: [md`Доопредели $f$ на концах так, чтобы получить непрерывную функцию на отрезке $[0;1]$.`],
+    answer: md`**Да.** Положим $f(0)=0$ и $f(1)=\sin1$: так как $|x^2\sin\frac1x|\le x^2\to0$, функция непрерывна на $[0;1]$. По теореме Кантора она равномерно непрерывна на $[0;1]$, а значит, и на подмножестве $(0;1)$.`,
+  },
+  {
+    id: 'p-nroot-factorial',
+    topic: 'seq-limit-2',
+    scales: ['black'],
+    type: 'prove',
+    points: 1.5,
+    source: 'Лонгрид 10, задача 10',
+    prompt: md`Докажи, что $\lim\limits_{n\to\infty}\sqrt[n]{n!}=+\infty$.`,
+    hints: [md`Сгруппируй множители $k$ и $n+1-k$: докажи $k(n+1-k)\ge n$ при $1\le k\le n$.`],
+    answer: md`$k(n+1-k)-n=(k-1)(n-k)\ge0$ при $1\le k\le n$. Перемножим по $k=1,\dots,n$: $(n!)^2=\prod\limits_{k=1}^nk(n+1-k)\ge n^n$, откуда $\sqrt[n]{n!}\ge\sqrt n$.
+$\sqrt n\to+\infty$, поэтому $\forall M>0\ \exists N:\ \forall n\ge N\ \sqrt[n]{n!}\ge\sqrt n>M$. $\blacksquare$`,
+  },
+  {
+    id: 'p-three-subseq',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'prove',
+    points: 1.5,
+    source: 'Лонгрид 11, задача 6',
+    prompt: md`У последовательности $\{a_n\}$ подпоследовательности $\{a_{2k}\}$, $\{a_{2k-1}\}$, $\{a_{3k}\}$ сходятся. Докажи, что $\{a_n\}$ сходится.`,
+    hints: [md`Найди общие подпоследовательности: у $\{a_{2k}\}$ и $\{a_{3k}\}$ — номера $6k$, у $\{a_{2k-1}\}$ и $\{a_{3k}\}$ — номера $6k-3$.`],
+    answer: md`Пусть $a_{2k}\to A$, $a_{2k-1}\to B$, $a_{3k}\to C$. $\{a_{6k}\}$ — подпоследовательность и $\{a_{2k}\}$, и $\{a_{3k}\}$, поэтому $A=C$. $\{a_{6k-3}\}=\{a_{3(2k-1)}\}$ — подпоследовательность и $\{a_{2k-1}\}$, и $\{a_{3k}\}$, поэтому $B=C$.
+Итак, $A=B$: чётные и нечётные члены стремятся к одному $A$. Для $\varepsilon>0$ возьмём $N=\max(2K_1,2K_2-1)$ из определений — при $n\ge N$ $|a_n-A|<\varepsilon$. $\blacksquare$`,
+  },
+  {
+    id: 'p-cauchy-counter',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 11, задача 11',
+    prompt: md`Приведи пример расходящейся последовательности $\{a_n\}$, у которой $\lim\limits_{n\to\infty}|a_{n+p}-a_n|=0$ для **каждого** фиксированного $p\in\mathbb N$. Почему это не противоречит критерию Коши?`,
+    hints: [md`Подойдёт медленно растущая последовательность: $\sqrt n$ или $\ln n$.`],
+    answer: md`$a_n=\sqrt n$: $|a_{n+p}-a_n|=\dfrac p{\sqrt{n+p}+\sqrt n}\to0$ при фиксированном $p$, но $\sqrt n\to+\infty$.
+В фундаментальности $N$ должно подходить сразу для **всех** $p$; здесь же для $p=3n$: $\sqrt{4n}-\sqrt n=\sqrt n\to\infty$.`,
+  },
+  {
+    id: 'p-unbounded-dichotomy',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'prove',
+    points: 1.5,
+    source: 'КР-2025, КР 1, вариант 1, №4 (продвинутый уровень)',
+    prompt: md`Последовательность $\{x_n\}$ не ограничена и при этом не является бесконечно большой. Докажи, что у неё есть хотя бы один **конечный** частичный предел.`,
+    hints: [
+      md`Запиши в кванторах, что $\{x_n\}$ не бесконечно большая.`,
+      md`Отсюда получится бесконечно много членов в некотором отрезке $[-M;M]$.`,
+    ],
+    answer: md`«Не бесконечно большая» означает: $\exists M>0:\ \forall N\ \exists n\ge N:\ |x_n|\le M$. Значит, номеров $n$ с $|x_n|\le M$ бесконечно много; выписав их по возрастанию, получим подпоследовательность, лежащую в $[-M;M]$. Она ограничена, и по теореме Больцано–Вейерштрасса у неё есть конечный частичный предел — он будет частичным пределом и исходной последовательности. $\blacksquare$`,
+  },
+  {
+    id: 'tf-three-partial',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'true-false',
+    points: 1,
+    source: 'КР-2025, КР 1, вариант 3, №4 (продвинутый уровень)',
+    prompt: md`$x_n\to2$, а $\{y_n\}$ предела не имеет. Может ли у $\{x_n+y_n\}$ быть ровно два частичных предела? А ровно пять?`,
+    hints: [md`Как связаны частичные пределы $y_n$ и $x_n+y_n$, если $x_n$ сходится?`],
+    answer: md`**Да, в обоих случаях.** Если $x_n\to2$, то $y_{n_k}\to b\iff x_{n_k}+y_{n_k}\to b+2$: множество частичных пределов суммы — это множество частичных пределов $y_n$, сдвинутое на $2$.
+Два: $y_n=(-1)^n$ (частичные пределы суммы $1$ и $3$). Пять: $y_n=n\bmod5$ (частичные пределы суммы $2,3,4,5,6$).`,
+  },
+  {
+    id: 'c-stolz-sqrt',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'compute',
+    points: 1.5,
+    source: 'Лонгрид 11, задача 20',
+    prompt: md`Найди $\lim\limits_{n\to\infty}\dfrac1{\sqrt n}\displaystyle\sum_{k=1}^n\frac1{\sqrt k}$.`,
+    hints: [md`Штольц с $x_n=\sum\limits_{k=1}^n\frac1{\sqrt k}$, $y_n=\sqrt n$ ($y_n$ строго возрастает и $\to+\infty$).`],
+    answer: md`$\dfrac{x_{n+1}-x_n}{y_{n+1}-y_n}=\dfrac{1/\sqrt{n+1}}{\sqrt{n+1}-\sqrt n}=\dfrac{\sqrt{n+1}+\sqrt n}{\sqrt{n+1}}=1+\sqrt{\dfrac n{n+1}}\to2$. По теореме Штольца предел равен $2$.`,
+  },
+  {
+    id: 'p-ratio-root',
+    topic: 'seq-limit-3',
+    scales: ['black'],
+    type: 'prove',
+    points: 1.5,
+    source: 'Лонгрид 10, задача 20',
+    prompt: md`Пусть $a_n\ne0$ и $\lim\limits_{n\to\infty}\left|\dfrac{a_{n+1}}{a_n}\right|=p>0$. Докажи, что $\lim\limits_{n\to\infty}\sqrt[n]{|a_n|}=p$. Верно ли обратное?`,
+    hints: [
+      md`Прологарифмируй: $\ln\sqrt[n]{|a_n|}=\dfrac{\ln|a_n|}n$ — к этому отношению примени теорему Штольца с $y_n=n$.`,
+      md`Для обратного попробуй $a_n=2^{n+(-1)^n}$.`,
+    ],
+    answer: md`$x_n=\ln|a_n|$, $y_n=n$ (строго возрастает, $\to+\infty$). $\dfrac{x_{n+1}-x_n}{y_{n+1}-y_n}=\ln\left|\dfrac{a_{n+1}}{a_n}\right|\to\ln p$ (непрерывность $\ln$). По Штольцу $\dfrac{\ln|a_n|}n\to\ln p$, а по непрерывности экспоненты $\sqrt[n]{|a_n|}=e^{\ln|a_n|/n}\to p$.
+**Обратное неверно:** $a_n=2^{n+(-1)^n}$: $\sqrt[n]{a_n}=2^{1+(-1)^n/n}\to2$, а $\frac{a_{n+1}}{a_n}=2^{1-2(-1)^n}$ принимает значения $\frac12$ и $8$ — предела нет.`,
+  },
+  {
+    id: 'tf-monotone-second-kind',
+    topic: 'continuity',
+    scales: ['black'],
+    type: 'true-false',
+    points: 1,
+    source: 'Лонгрид 15, пример 8',
+    prompt: md`Может ли монотонная на интервале функция иметь в точке этого интервала разрыв второго рода? А устранимый разрыв?`,
+    hints: [md`Теорема об односторонних пределах монотонных функций: какие у неё пределы и как они связаны с $f(x_0)$?`],
+    answer: md`**Нет и нет.** По теореме 5 в каждой точке интервала у монотонной (например, возрастающей) $f$ есть конечные $f(x_0-0)\le f(x_0)\le f(x_0+0)$ — второго рода нет. Если бы разрыв был устранимым, то $f(x_0-0)=f(x_0+0)$, и тогда все три числа равны — $f$ непрерывна. Остаётся только разрыв первого рода.`,
+  },
+  {
+    id: 'c-means-min',
+    topic: 'summation',
+    scales: ['black'],
+    type: 'compute',
+    points: 1,
+    source: 'Лонгрид 5, теорема 3',
+    prompt: md`Найди наименьшее значение $g(x)=2x+\dfrac1{x^2}$ при $x>0$.`,
+    hints: [md`Разбей $2x=x+x$ и примени неравенство между средним арифметическим и средним геометрическим трёх чисел.`],
+    answer: md`$\dfrac{x+x+\frac1{x^2}}3\ge\sqrt[3]{x\cdot x\cdot\frac1{x^2}}=1$, т. е. $g(x)\ge3$, и равенство $\iff x=x=\frac1{x^2}\iff x=1$. Наименьшее значение $g(1)=3$.`,
   },
 ];

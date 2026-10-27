@@ -8,17 +8,19 @@ export const complex: Topic = {
     {
       id: 'euler-formula',
       title: 'Формула Эйлера',
-      source: 'Лонгрид 12, определение 12',
+      source: 'Лонгрид 12, определение 13',
+      pitfalls: ['В курсе это определение, а не теорема — доказывать не нужно.', 'В показательной форме r = |z| > 0, а φ — аргумент в радианах.'],
       definition: {
         level: 'basic',
         text: md`По определению $$e^{i\varphi}=\cos\varphi+i\sin\varphi.$$ С её помощью тригонометрическая форма $z=r(\cos\varphi+i\sin\varphi)$ записывается в **показательной форме** $z=re^{i\varphi}$ ($r=|z|$, $\varphi$ — аргумент).`,
       },
-      notes: md`Тогда $z_1z_2=r_1r_2e^{i(\varphi_1+\varphi_2)}$, $\frac{z_1}{z_2}=\frac{r_1}{r_2}e^{i(\varphi_1-\varphi_2)}$, $z^n=r^ne^{in\varphi}$.`,
+      notes: md`В списке вопросов указано «определение 12», в лонгриде это определение 13. Тогда $z_1z_2=r_1r_2e^{i(\varphi_1+\varphi_2)}$, $\frac{z_1}{z_2}=\frac{r_1}{r_2}e^{i(\varphi_1-\varphi_2)}$, $z^n=r^ne^{in\varphi}$.`,
     },
     {
       id: 'de-moivre',
       title: 'Формула Муавра',
       source: 'Лонгрид 12, лемма 4',
+      pitfalls: ['Модуль возводится в степень n, а аргумент умножается на n.'],
       statement: {
         level: 'basic',
         text: md`Если $z=r(\cos\varphi+i\sin\varphi)$, то для любого $n\in\mathbb N$
@@ -38,6 +40,7 @@ export const functionsTopic: Topic = {
       id: 'rational-function',
       title: 'Рациональная функция',
       source: 'Лонгрид 13, определение 14',
+      pitfalls: ['Это отношение двух многочленов, а не любая дробь: sin x / x не рациональная функция.'],
       definition: {
         level: 'basic',
         text: md`**Рациональной** (дробно-рациональной) функцией называют отношение двух многочленов $\dfrac{P(x)}{Q(x)}$.`,
@@ -48,6 +51,7 @@ export const functionsTopic: Topic = {
       id: 'inverse-function-def',
       title: 'Обратная функция',
       source: 'Лонгрид 13, определение 2 и п. 1',
+      pitfalls: ['Обратная существует только у биекции — взаимно однозначного отображения X на Y.', 'f⁻¹ — это не 1/f.'],
       definition: {
         level: 'basic',
         text: md`Пусть отображение $f:A\to B$ **биективно** (взаимно однозначно: каждому $y\in B$ соответствует ровно один $x\in A$ с $f(x)=y$). **Обратным** называется отображение $g:B\to A$, действующее по правилу: если $f(x)=y$, то $g(y)=x$. Обозначение: $f^{-1}$.
@@ -60,6 +64,7 @@ export const functionsTopic: Topic = {
       id: 'fundamental-algebra',
       title: 'Основная теорема алгебры',
       source: 'Лонгрид 13, теорема 6',
+      pitfalls: ['Корень комплексный, не обязательно действительный: у x² + 1 действительных корней нет.', 'Степень n ≥ 1: у ненулевой константы корней нет.'],
       statement: {
         level: 'basic',
         text: md`Любой многочлен степени $n\ge1$ (с комплексными коэффициентами) имеет **по крайней мере один комплексный корень**.`,
@@ -85,7 +90,7 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x\in\mathring U_\delta(x_0)\
 или в неравенствах (для конечных $x_0$, $A$):
 $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x:\ 0<|x-x_0|<\delta\ \ |f(x)-A|<\varepsilon.$$`,
       },
-      notes: md`Значение $f(x_0)$ на предел не влияет (его может вовсе не быть) — поэтому окрестность проколотая.`,
+      notes: md`Окрестность проколотая, потому что предел описывает поведение $f$ рядом с $x_0$, а не в самой точке: $f(x_0)$ может быть любым или вовсе не определено.`,
       pitfalls: ['Забыть «0 <» в 0 < |x − x₀| < δ — тогда это уже почти непрерывность.'],
     },
     {
@@ -104,6 +109,7 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x:\ 0<|x-x_0|<\delta\ \ |f(x
       id: 'one-sided-limit-def',
       title: 'Пределы справа и слева по Коши',
       source: 'Лонгрид 14, определение 2',
+      pitfalls: ['Справа: x ∈ (x₀; x₀ + δ), то есть 0 < x − x₀ < δ; слева: 0 < x₀ − x < δ. Не перепутай знаки.'],
       definition: {
         level: 'basic',
         text: md`Пусть $f$ определена на $(x_0;x_0+a)$. $A$ — **предел справа** ($\lim\limits_{x\to x_0+0}f(x)=f(x_0+0)$), если
@@ -116,6 +122,7 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
       id: 'one-sided-equal',
       title: 'Теорема о равенстве односторонних пределов',
       source: 'Лонгрид 14, теорема 1',
+      pitfalls: ['В (1) ⇒ (2) берём δ = min(δ₁, δ₂), а не max.'],
       statement: {
         level: 'basic',
         text: md`Функция $f$, определённая в некоторой проколотой окрестности $x_0$, имеет предел $A$ в точке $x_0$ тогда и только тогда, когда односторонние пределы $f(x_0-0)$ и $f(x_0+0)$ существуют и равны $A$.`,
@@ -144,16 +151,18 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
       id: 'func-limit-ineq',
       title: 'Теорема о предельном переходе в неравенствах для функций',
       source: 'Лонгрид 14, теорема 4',
+      pitfalls: ['Строгое неравенство f < g в пределе даёт только A ≤ B.'],
       statement: {
         level: 'basic',
         text: md`Если $\lim\limits_{x\to x_0}f(x)=A$, $\lim\limits_{x\to x_0}g(x)=B$ ($A,B\in\overline{\mathbb R}$) и $\exists\delta>0:\ \forall x\in\mathring U_\delta(x_0)\ \ f(x)\le g(x)$, то $A\le B$.`,
       },
-      notes: md`Доказывается через Гейне: для последовательности Гейне $f(x_n)\le g(x_n)$, $f(x_n)\to A$, $g(x_n)\to B$, и по теореме для последовательностей $A\le B$.`,
+      notes: md`Идея: возьмём любую последовательность Гейне из окрестности, где $f\le g$. Тогда $f(x_n)\le g(x_n)$, $f(x_n)\to A$, $g(x_n)\to B$, и остаётся сослаться на такую же теорему для последовательностей.`,
     },
     {
       id: 'squeeze-func',
       title: 'Теорема о пределе зажатой функции',
       source: 'Лонгрид 14, теорема 3',
+      pitfalls: ['Последовательность Гейне берём из той проколотой окрестности, где выполнены неравенства.', 'Существование lim g — вывод, а не условие.'],
       statement: {
         level: 'basic',
         text: md`Пусть $f,g,h$ определены в некоторой проколотой окрестности $x_0$, в ней $f(x)\le g(x)\le h(x)$, и $\lim\limits_{x\to x_0}f(x)=\lim\limits_{x\to x_0}h(x)=A\in\overline{\mathbb R}$. Тогда $\exists\lim\limits_{x\to x_0}g(x)=A$.`,
@@ -175,6 +184,7 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
       id: 'func-arithmetic',
       title: 'Теорема об арифметических операциях с пределами функции',
       source: 'Лонгрид 14, теорема 7',
+      pitfalls: ['В п. 3 надо отдельно показать, что g ≠ 0 в некоторой проколотой окрестности (из B ≠ 0).'],
       statement: {
         level: 'basic',
         text: md`Если $\lim\limits_{x\to x_0}f(x)=A\in\mathbb R$ и $\lim\limits_{x\to x_0}g(x)=B\in\mathbb R$, то
@@ -188,6 +198,7 @@ $$\forall\varepsilon>0\ \exists\delta>0:\ \forall x\in(x_0-\delta;x_0)\ \ f(x)\i
       id: 'cauchy-criterion-func',
       title: 'Критерий Коши существования конечного предела функции',
       source: 'Лонгрид 14, теорема 8',
+      pitfalls: ['Критерий — только для конечного предела.', 'Обе точки x′, x″ берутся из проколотой окрестности; значение f(x₀) в условии не участвует.'],
       statement: {
         level: 'basic',
         text: md`Пусть $f$ определена в некоторой проколотой окрестности $x_0$. **Конечный** предел $\lim\limits_{x\to x_0}f(x)$ существует тогда и только тогда, когда выполнено **условие Коши**:
@@ -221,6 +232,7 @@ $$\forall\varepsilon>0\ \ \exists\delta>0:\ \forall x',x''\in\mathring U_\delta(
       id: 'cauchy-heine-equiv',
       title: 'Эквивалентность определений предела функции по Коши и по Гейне',
       source: 'Лонгрид 14, теорема 6',
+      pitfalls: ['В (Г ⇒ К) у построенной последовательности надо проверить оба свойства Гейне: xₙ → x₀ и xₙ ≠ x₀.'],
       statement: { level: 'advanced', text: md`Определения предела функции по Коши и по Гейне эквивалентны.` },
       proof: {
         level: 'advanced',

@@ -78,3 +78,19 @@ describe('content source', () => {
     }
   });
 });
+
+describe('task bank', () => {
+  it('red-scale tasks cost 1 point (the mock ticket expects 11 red points)', () => {
+    for (const t of tasks) if (t.scales.includes('red')) expect(t.points, t.id).toBe(1);
+  });
+
+  it('has 60+ tasks, about 80% count toward the red scale', () => {
+    expect(tasks.length).toBeGreaterThanOrEqual(60);
+    const red = tasks.filter((t) => t.scales.includes('red')).length;
+    expect(red / tasks.length).toBeGreaterThanOrEqual(0.75);
+  });
+
+  it('every unit has pitfalls', () => {
+    for (const u of units) expect(u.pitfalls?.length ?? 0, u.id).toBeGreaterThan(0);
+  });
+});
