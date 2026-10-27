@@ -81,7 +81,10 @@ export function MockPage() {
   const now = useNow(stage === 'prep' || stage === 'answer');
 
   useEffect(() => {
-    if (stage === 'intro') return persist(null);
+    if (stage === 'intro') {
+      persist(null);
+      return;
+    }
     persist({
       mode,
       stage,
