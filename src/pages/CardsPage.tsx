@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { KIND_LABEL, type Kind } from '../content/schema';
 import { facets, lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
 import { loadSession, saveSession, type CardSession } from '../store/cardSession';
+import { shuffle } from '../engine/ticket';
 import { getState, useProgress } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Md } from '../ui/Md';
@@ -71,6 +72,9 @@ export function CardsPage() {
   const setStep = (v: number | ((x: number) => number)) =>
     setSession((s) => ({ ...s, step: typeof v === 'function' ? v(s.step) : v }));
   const restart = () => setSession(fresh());
+  // Перемешиваем ещё не пройденные карточки (с текущей включительно); пройденные остаются на месте.
+  const shuffleRest = () =>
+    setSession((s) => ({ ...s, keys: [...s.keys.slice(0, s.pos), ...shuffle(s.keys.slice(s.pos))], step: 0 }));
 
   const card: Facet | undefined = queue[pos];
   const next = () => setSession((s) => ({ ...s, pos: s.pos + 1, step: 0 }));
@@ -129,6 +133,7 @@ export function CardsPage() {
             <button className="primary" onClick={restart}>
               Начать заново
             </button>{' '}
+            <button onClick={() => setSession({ ...fresh(), keys: shuffle(buildQueue()) })}>Пройти в случайном порядке</button>{' '}
             <Link to="/mock">Пробный билет →</Link>
           </p>
         </div>
@@ -137,6 +142,10 @@ export function CardsPage() {
           <div className="card-meta">
             <span>
               {pos + 1} / {queue.length}{' '}
+              <button className="link small" onClick={shuffleRest} title="Перемешать оставшиеся карточки">
+                перемешать
+              </button>{' '}
+              ·{' '}
               <button className="link small" onClick={() => confirm('Начать заново? Порядок карточек пересоберётся: сначала слабые.') && restart()}>
                 начать заново
               </button>
