@@ -1,5 +1,5 @@
-import { topics, tasks } from '../../content';
-import type { Kind, Level, Task, Topic, Unit } from '../content/schema';
+import { exams } from '../../content';
+import type { Exam, Kind, Level, Task, Topic, Unit } from '../content/schema';
 import type { Mode, State, Status } from '../store/progress';
 
 /** Грань единицы — отдельный «вопрос»: определение, формулировка или доказательство. */
@@ -11,40 +11,98 @@ export interface Facet {
   level: Level;
 }
 
-export const unitById = new Map<string, { unit: Unit; topic: Topic }>();
-export const facets: Facet[] = [];
+export interface PlanStep {
+  title: string;
+  body: string;
+  /** название леммы, если шаг из её доказательства */
+  lemma?: string;
+}
 
-for (const topic of topics) {
-  for (const unit of topic.units) {
-    unitById.set(unit.id, { unit, topic });
-    for (const kind of ['definition', 'statement', 'proof'] as const) {
-      const f = unit[kind];
-      if (f) facets.push({ key: `${unit.id}:${kind}`, unit, topic, kind, level: f.level });
+/** Содержимое одного экзамена с индексами: грани, поиск единиц и тем по id. */
+export class Catalog {
+  readonly topics: Topic[];
+  readonly tasks: Task[];
+  readonly facets: Facet[] = [];
+  readonly unitById = new Map<string, { unit: Unit; topic: Topic }>();
+  readonly topicById: Map<string, Topic>;
+  readonly facetByKey: Map<string, Facet>;
+
+  constructor(readonly exam: Exam) {
+    this.topics = exam.topics;
+    this.tasks = exam.tasks;
+    for (const topic of exam.topics) {
+      for (const unit of topic.units) {
+        this.unitById.set(unit.id, { unit, topic });
+        for (const kind of ['definition', 'statement', 'proof'] as const) {
+          const f = unit[kind];
+          if (f) this.facets.push({ key: `${unit.id}:${kind}`, unit, topic, kind, level: f.level });
+        }
+      }
     }
+    this.topicById = new Map(exam.topics.map((t) => [t.id, t]));
+    this.facetByKey = new Map(this.facets.map((f) => [f.key, f]));
+  }
+
+  visibleFacets(mode: Mode): Facet[] {
+    return this.facets.filter((f) => levelVisible(f.level, mode));
+  }
+
+  visibleTasks(mode: Mode): Task[] {
+    return this.tasks.filter((t) => taskVisible(t, mode));
+  }
+
+  /** Темы, в которых при данном уровне есть хоть что-то. */
+  visibleTopics(mode: Mode): Topic[] {
+    return this.topics.filter((t) => t.units.some((u) => unitVisible(u, mode)));
+  }
+
+  /**
+   * Леммы, которые надо доказать вместе с доказательством unit (рекурсивно,
+   * сначала самые глубокие, без повторов).
+   */
+  lemmaChain(unit: Unit): Unit[] {
+    const out: Unit[] = [];
+    const seen = new Set<string>([unit.id]);
+    const visit = (u: Unit) => {
+      for (const id of u.lemmas ?? []) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const l = this.unitById.get(id)?.unit;
+        if (!l) continue;
+        visit(l);
+        out.push(l);
+      }
+    };
+    visit(unit);
+    return out;
+  }
+
+  /** Полный план ответа: шаги всех лемм, затем шаги самого доказательства. */
+  proofPlan(unit: Unit): PlanStep[] {
+    const lemmaSteps = this.lemmaChain(unit).flatMap((l) => (l.proof?.steps ?? []).map((s) => ({ ...s, lemma: l.title })));
+    return [...lemmaSteps, ...(unit.proof?.steps ?? [])];
   }
 }
 
-export const topicById = new Map(topics.map((t) => [t.id, t]));
+export const examById = new Map(exams.map((e) => [e.id, e]));
+
+const catalogs = new Map<string, Catalog>();
+
+export function catalogOf(exam: Exam): Catalog {
+  let c = catalogs.get(exam.id);
+  if (!c) {
+    c = new Catalog(exam);
+    catalogs.set(exam.id, c);
+  }
+  return c;
+}
 
 export function levelVisible(level: Level, mode: Mode): boolean {
   return mode === 'all' || level === 'basic';
 }
 
-export function visibleFacets(mode: Mode): Facet[] {
-  return facets.filter((f) => levelVisible(f.level, mode));
-}
-
 export function taskVisible(t: Task, mode: Mode): boolean {
   return mode === 'all' || t.scales.includes('red');
-}
-
-export function visibleTasks(mode: Mode): Task[] {
-  return tasks.filter((t) => taskVisible(t, mode));
-}
-
-/** Темы, в которых при данном уровне есть хоть что-то. */
-export function visibleTopics(mode: Mode): Topic[] {
-  return topics.filter((t) => t.units.some((u) => unitVisible(u, mode)));
 }
 
 export function unitVisible(u: Unit, mode: Mode): boolean {
@@ -97,38 +155,4 @@ export function readiness(keys: string[], st: State): Readiness {
 /** Доля готовности: «знаю» = 1, «частично» = 0.5. */
 export function score(r: Readiness): number {
   return r.total ? (r.known + r.shaky * 0.5) / r.total : 0;
-}
-
-/**
- * Леммы, которые надо доказать вместе с доказательством unit (рекурсивно,
- * сначала самые глубокие, без повторов).
- */
-export function lemmaChain(unit: Unit): Unit[] {
-  const out: Unit[] = [];
-  const seen = new Set<string>([unit.id]);
-  const visit = (u: Unit) => {
-    for (const id of u.lemmas ?? []) {
-      if (seen.has(id)) continue;
-      seen.add(id);
-      const l = unitById.get(id)?.unit;
-      if (!l) continue;
-      visit(l);
-      out.push(l);
-    }
-  };
-  visit(unit);
-  return out;
-}
-
-export interface PlanStep {
-  title: string;
-  body: string;
-  /** название леммы, если шаг из её доказательства */
-  lemma?: string;
-}
-
-/** Полный план ответа: шаги всех лемм, затем шаги самого доказательства. */
-export function proofPlan(unit: Unit): PlanStep[] {
-  const lemmaSteps = lemmaChain(unit).flatMap((l) => (l.proof?.steps ?? []).map((s) => ({ ...s, lemma: l.title })));
-  return [...lemmaSteps, ...(unit.proof?.steps ?? [])];
 }

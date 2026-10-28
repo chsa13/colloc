@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import type { Kind, Unit } from '../content/schema';
 import { KIND_LABEL } from '../content/schema';
-import { lemmaChain, levelVisible, unitById } from '../engine/catalog';
+import { levelVisible } from '../engine/catalog';
+import { useCat, usePath } from '../exam';
 import type { Mode } from '../store/progress';
 import { useProgress } from '../store/progress';
 import { LevelBadge, StatusDot } from './LevelSwitch';
@@ -56,7 +57,7 @@ export function FacetBody({
 
 /** Доказательства лемм, которые нужно привести в ответе (перед основным доказательством). */
 export function LemmaProofs({ unit }: { unit: Unit }) {
-  const chain = lemmaChain(unit);
+  const chain = useCat().lemmaChain(unit);
   if (!chain.length) return null;
   return (
     <div className="lemmas">
@@ -87,17 +88,19 @@ export function LemmaProofs({ unit }: { unit: Unit }) {
 }
 
 export function LemmaLinks({ unit }: { unit: Unit }) {
-  const chain = lemmaChain(unit);
+  const cat = useCat();
+  const p = usePath();
+  const chain = cat.lemmaChain(unit);
   if (!chain.length) return null;
   return (
     <div className="lemma-links">
       <span className="label">В ответе докажи и {chain.length === 1 ? 'лемму' : 'леммы'}:</span>{' '}
       {chain.map((l, i) => {
-        const u = unitById.get(l.id)!;
+        const u = cat.unitById.get(l.id)!;
         return (
           <span key={l.id}>
             {i > 0 && ', '}
-            <Link to={`/topic/${u.topic.id}?u=${l.id}`}>{l.title}</Link>
+            <Link to={p(`/topic/${u.topic.id}?u=${l.id}`)}>{l.title}</Link>
           </span>
         );
       })}
@@ -106,17 +109,19 @@ export function LemmaLinks({ unit }: { unit: Unit }) {
 }
 
 export function UsesLinks({ unit }: { unit: Unit }) {
+  const cat = useCat();
+  const p = usePath();
   if (!unit.uses?.length) return null;
   return (
     <div className="uses">
       <span className="label">Ссылается на теоремы:</span>{' '}
       {unit.uses.map((id, i) => {
-        const u = unitById.get(id);
+        const u = cat.unitById.get(id);
         if (!u) return null;
         return (
           <span key={id}>
             {i > 0 && ', '}
-            <Link to={`/topic/${u.topic.id}?u=${id}`}>{u.unit.title}</Link>
+            <Link to={p(`/topic/${u.topic.id}?u=${id}`)}>{u.unit.title}</Link>
           </span>
         );
       })}
@@ -126,6 +131,8 @@ export function UsesLinks({ unit }: { unit: Unit }) {
 
 /** Карточка единицы в справочнике: все видимые грани + примечания. */
 export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
+  const { exam } = useCat();
+  const p = usePath();
   const st = useProgress();
   const kinds = (['definition', 'statement', 'proof'] as const).filter((k) => unit[k]);
   return (
@@ -143,11 +150,11 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
         return (
           <section key={k} className={`facet ${visible ? '' : 'facet-hidden'}`}>
             <div className="facet-head">
-              <LevelBadge level={f.level} />
+              {exam.levels && <LevelBadge level={f.level} />}
               <span className="kind">{KIND_LABEL[k]}</span>
               <StatusDot status={st.items[key]?.status ?? 'new'} />
               {k === 'proof' && visible && (
-                <Link className="small" to={`/proofs/${unit.id}`}>
+                <Link className="small" to={p(`/proofs/${unit.id}`)}>
                   тренировать →
                 </Link>
               )}

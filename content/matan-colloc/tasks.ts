@@ -1,4 +1,4 @@
-import { md, type Task } from '../src/content/schema';
+import { md, type Task } from '../../src/content/schema';
 
 // Задачи в стиле блока «Задачи» билета. scales — как звёздочки в билете:
 // ['red'] — идёт только в основной, ['red','black'] — в оба, ['black'] — только продвинутый.

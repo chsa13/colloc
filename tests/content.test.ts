@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import katex from 'katex';
-import { topics, tasks } from '../content';
+import { exams } from '../content';
+import type { Exam } from '../src/content/schema';
 
 // Все формулы из текста: $$...$$ и $...$
 function formulas(text: string): string[] {
@@ -11,12 +12,11 @@ function formulas(text: string): string[] {
   return out;
 }
 
-const units = topics.flatMap((t) => t.units.map((u) => ({ ...u, topic: t.id })));
-const unitIds = new Set(units.map((u) => u.id));
+const unitsOf = (e: Exam) => e.topics.flatMap((t) => t.units.map((u) => ({ ...u, topic: t.id })));
 
-function texts(): { where: string; text: string }[] {
+function texts(e: Exam): { where: string; text: string }[] {
   const all: { where: string; text: string }[] = [];
-  for (const u of units) {
+  for (const u of unitsOf(e)) {
     const add = (k: string, s?: string) => s && all.push({ where: `${u.id}.${k}`, text: s });
     add('definition', u.definition?.text);
     add('statement', u.statement?.text);
@@ -26,8 +26,10 @@ function texts(): { where: string; text: string }[] {
       add(`proof.step${i}.title`, s.title);
       add(`proof.step${i}.body`, s.body);
     });
+    u.pitfalls?.forEach((p, i) => add(`pitfall${i}`, p));
   }
-  for (const t of tasks) {
+  all.push({ where: 'how', text: e.how });
+  for (const t of e.tasks) {
     all.push({ where: `${t.id}.prompt`, text: t.prompt });
     all.push({ where: `${t.id}.answer`, text: t.answer });
     t.hints.forEach((h, i) => all.push({ where: `${t.id}.hint${i}`, text: h }));
@@ -35,43 +37,135 @@ function texts(): { where: string; text: string }[] {
   return all;
 }
 
-describe('content', () => {
-  it('ids are unique', () => {
-    expect(unitIds.size).toBe(units.length);
-    expect(new Set(tasks.map((t) => t.id)).size).toBe(tasks.length);
+describe('exams', () => {
+  it('ids are unique and url-safe', () => {
+    expect(new Set(exams.map((e) => e.id)).size).toBe(exams.length);
+    for (const e of exams) expect(e.id, e.id).toMatch(/^[a-z0-9-]+$/);
   });
 
-  it('every unit has at least one facet', () => {
-    for (const u of units) expect(u.definition || u.statement || u.proof, u.id).toBeTruthy();
-  });
-
-  it('uses and task topics point to existing items', () => {
-    for (const u of units) for (const id of u.uses ?? []) expect(unitIds.has(id), `${u.id} -> ${id}`).toBe(true);
-    const topicIds = new Set(topics.map((t) => t.id));
-    for (const t of tasks) expect(topicIds.has(t.topic), t.id).toBe(true);
-  });
-
-  it('dollar signs are balanced', () => {
-    for (const { where, text } of texts()) {
-      const n = (text.replace(/\$\$/g, '').match(/\$/g) ?? []).length;
-      expect(n % 2, where).toBe(0);
+  it('dates are valid and ordered', () => {
+    for (const e of exams) {
+      for (const d of e.dates) expect(d, e.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(e.dates[0] <= e.dates[1], e.id).toBe(true);
     }
   });
 
-  it('all formulas render with KaTeX', () => {
-    for (const { where, text } of texts())
-      for (const f of formulas(text)) {
-        expect(() => katex.renderToString(f, { throwOnError: true }), `${where}: ${f}`).not.toThrow();
+  it('mock slots point to existing topics and have matching tasks', () => {
+    for (const e of exams) {
+      if (e.mock.kind !== 'test') continue;
+      const topicIds = new Set(e.topics.map((t) => t.id));
+      for (const s of e.mock.slots) {
+        for (const t of s.topics ?? []) expect(topicIds.has(t), `${e.id}: ${s.label} -> ${t}`).toBe(true);
+        const fits = e.tasks.filter((t) => (!s.topics || s.topics.includes(t.topic)) && (!s.types || s.types.includes(t.type)));
+        expect(fits.length, `${e.id}: мало задач для «${s.label}»`).toBeGreaterThanOrEqual(3);
       }
+    }
+  });
+
+  it('without levels everything is basic', () => {
+    for (const e of exams) {
+      if (e.levels) continue;
+      for (const u of unitsOf(e)) for (const k of ['definition', 'statement', 'proof'] as const) expect(u[k]?.level ?? 'basic', u.id).toBe('basic');
+      for (const t of e.tasks) expect(t.scales, t.id).toEqual(['red']);
+    }
   });
 });
+
+for (const exam of exams) {
+  const units = unitsOf(exam);
+  const unitIds = new Set(units.map((u) => u.id));
+
+  describe(`content: ${exam.id}`, () => {
+    it('ids are unique', () => {
+      expect(unitIds.size).toBe(units.length);
+      expect(new Set(exam.tasks.map((t) => t.id)).size).toBe(exam.tasks.length);
+      expect(new Set(exam.topics.map((t) => t.id)).size).toBe(exam.topics.length);
+    });
+
+    it('every unit has at least one facet and pitfalls', () => {
+      for (const u of units) {
+        expect(u.definition || u.statement || u.proof, u.id).toBeTruthy();
+        expect(u.pitfalls?.length ?? 0, u.id).toBeGreaterThan(0);
+      }
+    });
+
+    it('uses, lemmas and task topics point to existing items', () => {
+      for (const u of units) for (const id of [...(u.uses ?? []), ...(u.lemmas ?? [])]) expect(unitIds.has(id), `${u.id} -> ${id}`).toBe(true);
+      const topicIds = new Set(exam.topics.map((t) => t.id));
+      for (const t of exam.tasks) expect(topicIds.has(t.topic), t.id).toBe(true);
+    });
+
+    it('tasks have positive points and an answer', () => {
+      for (const t of exam.tasks) {
+        expect(t.points, t.id).toBeGreaterThan(0);
+        expect(t.answer.trim().length, t.id).toBeGreaterThan(0);
+      }
+    });
+
+    it('dollar signs are balanced', () => {
+      for (const { where, text } of texts(exam)) {
+        const n = (text.replace(/\$\$/g, '').match(/\$/g) ?? []).length;
+        expect(n % 2, where).toBe(0);
+      }
+    });
+
+    it('all formulas render with KaTeX', () => {
+      for (const { where, text } of texts(exam))
+        for (const f of formulas(text)) {
+          expect(() => katex.renderToString(f, { throwOnError: true }), `${where}: ${f}`).not.toThrow();
+        }
+    });
+
+    it('every lemma exists and has a proof; no cycles', () => {
+      const byId = new Map(units.map((u) => [u.id, u]));
+      const visiting = new Set<string>();
+      const done = new Set<string>();
+      const dfs = (id: string, path: string[]) => {
+        if (done.has(id)) return;
+        expect(visiting.has(id), `цикл лемм: ${[...path, id].join(' -> ')}`).toBe(false);
+        visiting.add(id);
+        for (const l of byId.get(id)?.lemmas ?? []) {
+          const lu = byId.get(l);
+          expect(lu, `${id}: нет леммы ${l}`).toBeTruthy();
+          expect(lu!.proof, `${l}: у леммы нет доказательства`).toBeTruthy();
+          dfs(l, [...path, id]);
+        }
+        visiting.delete(id);
+        done.add(id);
+      };
+      for (const u of units) dfs(u.id, []);
+    });
+
+    it('auxiliary lemmas are used somewhere', () => {
+      const used = new Set(units.flatMap((u) => u.lemmas ?? []));
+      for (const u of units.filter((x) => x.aux)) expect(used.has(u.id), `${u.id} никем не используется`).toBe(true);
+    });
+
+    // Леммы нужны для доказательства, а не для формулировки: в формулировке теоремы их нет,
+    // они — отдельные единицы в unit.lemmas и показываются в блоке доказательства.
+    it('theorem statements do not embed lemmas', () => {
+      for (const u of units) {
+        if (u.aux || !u.statement) continue;
+        expect(/\*\*Лемм/.test(u.statement.text), `${u.id}: лемма внутри формулировки`).toBe(false);
+      }
+    });
+
+    it('proof steps of a theorem are not lemma steps (lemmas live in unit.lemmas)', () => {
+      for (const u of units) {
+        if (u.aux || !u.proof) continue;
+        for (const s of u.proof.steps) expect(/^Лемм[аы]\s*\d/.test(s.title), `${u.id}: шаг «${s.title}»`).toBe(false);
+      }
+    });
+  });
+}
 
 describe('content source', () => {
   it('LaTeX is only inside md`...` strings (in quotes a backslash is lost)', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const dir = path.resolve(__dirname, '../content');
-    for (const f of fs.readdirSync(dir).filter((x: string) => x.endsWith('.ts'))) {
+    const files = (fs.readdirSync(dir, { recursive: true }) as string[]).filter((x) => x.endsWith('.ts'));
+    for (const f of files) {
       const src = fs.readFileSync(path.join(dir, f), 'utf8');
       const bad = src.split('\n').filter((l: string) => /(:\s*|\[\s*|,\s*)'[^'\n]*\\[^'\n]*'/.test(l));
       expect(bad, f).toEqual([]);
@@ -79,7 +173,11 @@ describe('content source', () => {
   });
 });
 
-describe('task bank', () => {
+const matan = exams.find((e) => e.id === 'matan-colloc')!;
+const tasks = matan.tasks;
+const units = unitsOf(matan);
+
+describe('matan-colloc: task bank', () => {
   it('red-scale tasks cost 1 point (the mock ticket expects 11 red points)', () => {
     for (const t of tasks) if (t.scales.includes('red')) expect(t.points, t.id).toBe(1);
   });
@@ -89,38 +187,10 @@ describe('task bank', () => {
     const red = tasks.filter((t) => t.scales.includes('red')).length;
     expect(red / tasks.length).toBeGreaterThanOrEqual(0.75);
   });
-
-  it('every unit has pitfalls', () => {
-    for (const u of units) expect(u.pitfalls?.length ?? 0, u.id).toBeGreaterThan(0);
-  });
 });
 
-describe('lemmas', () => {
+describe('matan-colloc: lemmas', () => {
   const byId = new Map(units.map((u) => [u.id, u]));
-
-  it('every lemma exists and has a proof; no cycles', () => {
-    const visiting = new Set<string>();
-    const done = new Set<string>();
-    const dfs = (id: string, path: string[]) => {
-      if (done.has(id)) return;
-      expect(visiting.has(id), `цикл лемм: ${[...path, id].join(' -> ')}`).toBe(false);
-      visiting.add(id);
-      for (const l of byId.get(id)?.lemmas ?? []) {
-        const lu = byId.get(l);
-        expect(lu, `${id}: нет леммы ${l}`).toBeTruthy();
-        expect(lu!.proof, `${l}: у леммы нет доказательства`).toBeTruthy();
-        dfs(l, [...path, id]);
-      }
-      visiting.delete(id);
-      done.add(id);
-    };
-    for (const u of units) dfs(u.id, []);
-  });
-
-  it('auxiliary lemmas are used somewhere', () => {
-    const used = new Set(units.flatMap((u) => u.lemmas ?? []));
-    for (const u of units.filter((x) => x.aux)) expect(used.has(u.id), `${u.id} никем не используется`).toBe(true);
-  });
 
   // Если доказательство ссылается на вспомогательный факт, его доказательство должно быть подключено.
   const RULES: [RegExp, string][] = [
@@ -163,20 +233,14 @@ describe('lemmas', () => {
   });
 });
 
-describe('statements', () => {
-  // Леммы нужны для доказательства, а не для формулировки: в формулировке теоремы их нет,
-  // они — отдельные единицы в unit.lemmas и показываются в блоке доказательства.
-  it('theorem statements do not embed lemmas', () => {
-    for (const u of units) {
-      if (u.aux || !u.statement) continue;
-      expect(/\*\*Лемм/.test(u.statement.text), `${u.id}: лемма внутри формулировки`).toBe(false);
-    }
-  });
-
-  it('proof steps of a theorem are not lemma steps (lemmas live in unit.lemmas)', () => {
-    for (const u of units) {
-      if (u.aux || !u.proof) continue;
-      for (const s of u.proof.steps) expect(/^Лемм[аы]\s*\d/.test(s.title), `${u.id}: шаг «${s.title}»`).toBe(false);
+describe('linal-kr2: task bank', () => {
+  const linal = exams.find((e) => e.id === 'linal-kr2')!;
+  it('has 50+ tasks covering every topic, each with a source and a hint', () => {
+    expect(linal.tasks.length).toBeGreaterThanOrEqual(50);
+    for (const topic of linal.topics) expect(linal.tasks.filter((t) => t.topic === topic.id).length, topic.id).toBeGreaterThanOrEqual(12);
+    for (const t of linal.tasks) {
+      expect(t.source, t.id).toBeTruthy();
+      expect(t.hints.length, t.id).toBeGreaterThan(0);
     }
   });
 });

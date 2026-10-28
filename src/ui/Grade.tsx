@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { mark, type Status } from '../store/progress';
+import { useStore, type Status } from '../store/progress';
 
 /** Три кнопки самооценки; клавиши 1/2/3. */
 export function Grade({
@@ -16,9 +16,10 @@ export function Grade({
   current?: Status;
   hotkeys?: boolean;
 }) {
+  const store = useStore();
   const go = (s: Exclude<Status, 'new'>) => {
-    mark(itemKey, s);
-    for (const k of alsoKeys) mark(k, s);
+    store.mark(itemKey, s);
+    for (const k of alsoKeys) store.mark(k, s);
     onDone?.();
   };
   useEffect(() => {

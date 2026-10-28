@@ -1,5 +1,7 @@
+import { storageKey } from './progress';
+
 // Сессия карточек: порядок карточек, текущая позиция и что уже открыто.
-// Хранится в браузере отдельно для каждого набора фильтров, переживает перезагрузку.
+// Хранится в браузере отдельно для каждого экзамена и набора фильтров, переживает перезагрузку.
 
 export interface CardSession {
   /** набор фильтров, для которого построена очередь */
@@ -12,33 +14,32 @@ export interface CardSession {
   updated: number;
 }
 
-const KEY = 'colloc-cards-sessions-v1';
 const MAX_SESSIONS = 20;
 
-function loadAll(): Record<string, CardSession> {
+function loadAll(examId: string): Record<string, CardSession> {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(storageKey(examId, 'cards'));
     return raw ? (JSON.parse(raw) as Record<string, CardSession>) : {};
   } catch {
     return {};
   }
 }
 
-export function loadSession(fk: string): CardSession | null {
-  const s = loadAll()[fk];
+export function loadSession(examId: string, fk: string): CardSession | null {
+  const s = loadAll(examId)[fk];
   if (!s || !Array.isArray(s.keys) || typeof s.pos !== 'number') return null;
   return s;
 }
 
-export function saveSession(s: CardSession) {
+export function saveSession(examId: string, s: CardSession) {
   try {
-    const all = loadAll();
+    const all = loadAll(examId);
     all[s.fk] = { ...s, updated: Date.now() };
     // храним только последние сессии
     const keep = Object.values(all)
       .sort((a, b) => b.updated - a.updated)
       .slice(0, MAX_SESSIONS);
-    localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(keep.map((x) => [x.fk, x]))));
+    localStorage.setItem(storageKey(examId, 'cards'), JSON.stringify(Object.fromEntries(keep.map((x) => [x.fk, x]))));
   } catch {
     // нет доступа к хранилищу — сессия просто не сохранится
   }

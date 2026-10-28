@@ -1,4 +1,4 @@
-import { md, type Topic } from '../src/content/schema';
+import { md, type Topic } from '../../src/content/schema';
 
 export const sets: Topic = {
   id: 'sets',

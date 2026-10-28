@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
+import { useCat } from '../exam';
 
-// Прогресс хранится в браузере (localStorage). Сервер не нужен.
+// Прогресс хранится в браузере (localStorage), отдельно для каждого экзамена. Сервер не нужен.
 
 export type Status = 'new' | 'weak' | 'shaky' | 'known';
 export type Mode = 'basic' | 'all';
@@ -28,93 +29,127 @@ export interface State {
   mocks: MockResult[];
 }
 
-const KEY = 'colloc-matan-v1';
+type Slot = 'progress' | 'cards' | 'mock';
+
+// Коллоквиум по матану жил на сайте один; его ключи оставляем, чтобы не потерять прогресс.
+const LEGACY: Record<string, Record<Slot, string>> = {
+  'matan-colloc': { progress: 'colloc-matan-v1', cards: 'colloc-cards-sessions-v1', mock: 'colloc-mock-current' },
+};
+
+/** Ключ localStorage для данных экзамена. */
+export function storageKey(examId: string, slot: Slot): string {
+  return LEGACY[examId]?.[slot] ?? `exams:${examId}:${slot}:v1`;
+}
 
 const empty = (): State => ({ version: 1, mode: 'basic', items: {}, mocks: [] });
 
-function load(): State {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return empty();
-    const parsed = JSON.parse(raw) as State;
-    if (parsed.version !== 1) return empty();
-    return { ...empty(), ...parsed };
-  } catch {
-    return empty();
-  }
-}
+export class ProgressStore {
+  private state: State;
+  private listeners = new Set<() => void>();
+  private readonly key: string;
 
-let state: State = load();
-const listeners = new Set<() => void>();
-
-function save() {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    // приватный режим / нет места — прогресс просто не сохранится
-  }
-}
-
-function set(next: State) {
-  state = next;
-  save();
-  listeners.forEach((l) => l());
-}
-
-export function getState(): State {
-  return state;
-}
-
-export function useProgress(): State {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    () => state,
-  );
-}
-
-export function setMode(mode: Mode) {
-  set({ ...state, mode });
-}
-
-export function mark(key: string, status: Exclude<Status, 'new'>) {
-  const prev = state.items[key];
-  set({
-    ...state,
-    items: { ...state.items, [key]: { status, seen: (prev?.seen ?? 0) + 1, last: Date.now() } },
-  });
-}
-
-export function statusOf(key: string): Status {
-  return state.items[key]?.status ?? 'new';
-}
-
-export function addMock(r: MockResult) {
-  set({ ...state, mocks: [...state.mocks, r] });
-}
-
-export function exportJson(): string {
-  return JSON.stringify(state, null, 2);
-}
-
-export function importJson(json: string) {
-  const parsed = JSON.parse(json) as State;
-  if (parsed.version !== 1 || typeof parsed.items !== 'object') throw new Error('Неверный файл прогресса');
-  set({ ...empty(), ...parsed });
-}
-
-export function resetProgress() {
-  set({ ...empty(), mode: state.mode });
-}
-
-// Обновление между вкладками
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === KEY) {
-      state = load();
-      listeners.forEach((l) => l());
+  constructor(examId: string) {
+    this.key = storageKey(examId, 'progress');
+    this.state = this.load();
+    if (typeof window !== 'undefined') {
+      // Обновление между вкладками
+      window.addEventListener('storage', (e) => {
+        if (e.key === this.key) {
+          this.state = this.load();
+          this.emit();
+        }
+      });
     }
-  });
+  }
+
+  private load(): State {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return empty();
+      const parsed = JSON.parse(raw) as State;
+      if (parsed.version !== 1) return empty();
+      return { ...empty(), ...parsed };
+    } catch {
+      return empty();
+    }
+  }
+
+  private emit() {
+    this.listeners.forEach((l) => l());
+  }
+
+  private set(next: State) {
+    this.state = next;
+    try {
+      localStorage.setItem(this.key, JSON.stringify(next));
+    } catch {
+      // приватный режим / нет места — прогресс просто не сохранится
+    }
+    this.emit();
+  }
+
+  get = (): State => this.state;
+
+  subscribe = (cb: () => void) => {
+    this.listeners.add(cb);
+    return () => {
+      this.listeners.delete(cb);
+    };
+  };
+
+  setMode(mode: Mode) {
+    this.set({ ...this.state, mode });
+  }
+
+  mark(key: string, status: Exclude<Status, 'new'>) {
+    const prev = this.state.items[key];
+    this.set({
+      ...this.state,
+      items: { ...this.state.items, [key]: { status, seen: (prev?.seen ?? 0) + 1, last: Date.now() } },
+    });
+  }
+
+  addMock(r: MockResult) {
+    this.set({ ...this.state, mocks: [...this.state.mocks, r] });
+  }
+
+  exportJson(): string {
+    return JSON.stringify(this.state, null, 2);
+  }
+
+  importJson(json: string) {
+    const parsed = JSON.parse(json) as State;
+    if (parsed.version !== 1 || typeof parsed.items !== 'object') throw new Error('Неверный файл прогресса');
+    this.set({ ...empty(), ...parsed });
+  }
+
+  reset() {
+    this.set({ ...empty(), mode: this.state.mode });
+  }
+}
+
+const stores = new Map<string, ProgressStore>();
+
+export function progressStore(examId: string): ProgressStore {
+  let s = stores.get(examId);
+  if (!s) {
+    s = new ProgressStore(examId);
+    stores.set(examId, s);
+  }
+  return s;
+}
+
+/** Хранилище прогресса текущего экзамена. */
+export function useStore(): ProgressStore {
+  return progressStore(useCat().exam.id);
+}
+
+/** Прогресс текущего экзамена; компонент перерисовывается при изменениях. */
+export function useProgress(): State {
+  return useProgressOf(useCat().exam.id);
+}
+
+export function useProgressOf(examId: string): State {
+  const s = progressStore(examId);
+  return useSyncExternalStore(s.subscribe, s.get);
 }

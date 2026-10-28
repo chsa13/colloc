@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { tasks } from '../../content';
-import { KIND_LABEL } from '../content/schema';
-import { facets, lemmaChain, taskKey } from '../engine/catalog';
-import { generateTicket, totals, type Section, type TicketQuestion } from '../engine/ticket';
-import { addMock, mark, useProgress, type Mode } from '../store/progress';
+import { KIND_LABEL, TASK_TYPE_LABEL } from '../content/schema';
+import { taskKey, type Catalog } from '../engine/catalog';
+import { generateMock, totals, type Section, type TicketQuestion } from '../engine/ticket';
+import { useCat, usePath } from '../exam';
+import { storageKey, useProgress, useStore, type Mode } from '../store/progress';
 import { FacetBody } from '../ui/FacetView';
 import { Stars } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
@@ -21,19 +21,15 @@ interface Saved {
   qs: (Omit<TicketQuestion, 'facet' | 'task'> & { facetKey?: string; taskId?: string })[];
 }
 
-const SAVE_KEY = 'colloc-mock-current';
-const PREP_MIN = 45;
-const ANSWER_MIN = 30;
-
-function restore(): { s: Saved; qs: TicketQuestion[] } | null {
+function restore(cat: Catalog): { s: Saved; qs: TicketQuestion[] } | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(storageKey(cat.exam.id, 'mock'));
     if (!raw) return null;
     const s = JSON.parse(raw) as Saved;
     const qs = s.qs.map((q) => ({
       ...q,
-      facet: q.facetKey ? facets.find((f) => f.key === q.facetKey) : undefined,
-      task: q.taskId ? tasks.find((t) => t.id === q.taskId) : undefined,
+      facet: q.facetKey ? cat.facetByKey.get(q.facetKey) : undefined,
+      task: q.taskId ? cat.tasks.find((t) => t.id === q.taskId) : undefined,
     }));
     if (qs.some((q) => !q.facet && !q.task)) return null;
     return { s, qs };
@@ -42,10 +38,11 @@ function restore(): { s: Saved; qs: TicketQuestion[] } | null {
   }
 }
 
-function persist(s: Saved | null) {
+function persist(examId: string, s: Saved | null) {
   try {
-    if (s) localStorage.setItem(SAVE_KEY, JSON.stringify(s));
-    else localStorage.removeItem(SAVE_KEY);
+    const key = storageKey(examId, 'mock');
+    if (s) localStorage.setItem(key, JSON.stringify(s));
+    else localStorage.removeItem(key);
   } catch {
     /* не критично */
   }
@@ -70,22 +67,31 @@ function clock(ms: number) {
 const SECTIONS: Section[] = ['Определения', 'Формулировки', 'Доказательства', 'Задачи'];
 
 export function MockPage() {
+  const cat = useCat();
+  const { exam } = cat;
+  const spec = exam.mock;
+  const isTest = spec.kind === 'test';
+  // Время на работу и на ответ (у контрольной проверка без таймера).
+  const PREP_MIN = spec.kind === 'ticket' ? spec.prepMin : spec.minutes;
+  const ANSWER_MIN = spec.kind === 'ticket' ? spec.answerMin : null;
+  const path = usePath();
+  const store = useStore();
   const st = useProgress();
-  const restored = useMemo(restore, []);
+  const restored = useMemo(() => restore(cat), [cat]);
   const [stage, setStage] = useState<Stage>(restored?.s.stage ?? 'intro');
   const [qs, setQs] = useState<TicketQuestion[]>(restored?.qs ?? []);
   const [mode, setModeLocal] = useState<Mode>(restored?.s.mode ?? st.mode);
   const [started, setStarted] = useState(restored?.s.started ?? 0);
   const [answerStarted, setAnswerStarted] = useState(restored?.s.answerStarted ?? 0);
   const [scores, setScores] = useState<Record<string, number>>(restored?.s.scores ?? {});
-  const now = useNow(stage === 'prep' || stage === 'answer');
+  const now = useNow(stage === 'prep' || (stage === 'answer' && ANSWER_MIN !== null));
 
   useEffect(() => {
     if (stage === 'intro') {
-      persist(null);
+      persist(exam.id, null);
       return;
     }
-    persist({
+    persist(exam.id, {
       mode,
       stage,
       started,
@@ -93,11 +99,11 @@ export function MockPage() {
       scores,
       qs: qs.map(({ facet, task, ...rest }) => ({ ...rest, facetKey: facet?.key, taskId: task?.id })),
     });
-  }, [stage, qs, mode, started, answerStarted, scores]);
+  }, [exam.id, stage, qs, mode, started, answerStarted, scores]);
 
   const start = () => {
     setModeLocal(st.mode);
-    setQs(generateTicket(st.mode));
+    setQs(generateMock(cat, st.mode));
     setScores({});
     setStarted(Date.now());
     setStage('prep');
@@ -110,26 +116,66 @@ export function MockPage() {
 
   const finish = () => {
     const t = totals(qs, scores);
-    addMock({ date: Date.now(), mode, ...t });
+    store.addMock({ date: Date.now(), mode, ...t });
     // Переносим результат в прогресс: ≥90% — знаю, ≥40% — частично, иначе не знаю.
     const verdict = (got: number, max: number) => (got >= 0.9 * max ? 'known' : got >= 0.4 * max ? 'shaky' : 'weak');
     for (const q of qs) {
       const got = (i: number) => scores[`${q.n}:${i}`] ?? 0;
-      if (q.task) mark(taskKey(q.task), verdict(got(0), q.parts[0].max));
+      if (q.task) store.mark(taskKey(q.task), verdict(got(0), q.parts[0].max));
       else if (q.facet) {
         if (q.facet.kind === 'proof') {
-          if (q.facet.unit.statement) mark(`${q.facet.unit.id}:statement`, verdict(got(0), q.parts[0].max));
-          mark(q.facet.key, verdict(got(1), q.parts[1].max));
-        } else mark(q.facet.key, verdict(got(0), q.parts[0].max));
+          if (q.facet.unit.statement) store.mark(`${q.facet.unit.id}:statement`, verdict(got(0), q.parts[0].max));
+          store.mark(q.facet.key, verdict(got(1), q.parts[1].max));
+        } else store.mark(q.facet.key, verdict(got(0), q.parts[0].max));
       }
     }
     setStage('result');
   };
 
+  if (stage === 'intro' && spec.kind === 'test') {
+    return (
+      <div className="page">
+        <h1>{spec.title}</h1>
+        <p>
+          Контрольная собирается случайно из банка задач: по одной задаче на каждую позицию. {exam.format}.
+        </p>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>Что будет</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spec.slots.map((s, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td>{s.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <ol>
+          <li>
+            <b>Работа — {spec.minutes} минут.</b> Решай на бумаге, без конспектов и калькулятора, с обоснованиями.
+          </li>
+          <li>
+            <b>Проверка.</b> Открывай решение по каждой задаче и честно ставь себе баллы: за ответ без объяснения «почему» — не больше половины.
+          </li>
+          <li>Результат сохранится, а задачи получат статус в прогрессе.</li>
+        </ol>
+        <button className="primary big-btn" onClick={start}>
+          Начать
+        </button>
+        <MockHistory />
+      </div>
+    );
+  }
+
   if (stage === 'intro') {
     return (
       <div className="page">
-        <h1>Пробный билет</h1>
+        <h1>{spec.title}</h1>
         <p>Билет собирается случайно по структуре демо-версии. Сейчас уровень: <b>{st.mode === 'basic' ? 'основной' : 'основной + продвинутый'}</b>.</p>
         <table className="tbl">
           <thead>
@@ -184,29 +230,34 @@ export function MockPage() {
     return (
       <div className="page">
         <div className={`timer ${left < 0 ? 'timer-over' : left < 5 * 60_000 ? 'timer-warn' : ''}`}>
-          Подготовка: {clock(left)} {left < 0 && '— время вышло'}
+          {isTest ? 'Контрольная' : 'Подготовка'}: {clock(left)} {left < 0 && '— время вышло'}
         </div>
         <TicketList qs={qs} />
         <div className="row">
           <button className="primary" onClick={toAnswer}>
-            Перейти к ответу →
+            {isTest ? 'Сдать и проверить →' : 'Перейти к ответу →'}
           </button>
-          <button onClick={() => confirm('Бросить билет?') && setStage('intro')}>Бросить</button>
+          <button onClick={() => confirm('Бросить пробник?') && setStage('intro')}>Бросить</button>
         </div>
       </div>
     );
   }
 
   if (stage === 'answer') {
-    const left = answerStarted + ANSWER_MIN * 60_000 - now;
+    const left = ANSWER_MIN === null ? 0 : answerStarted + ANSWER_MIN * 60_000 - now;
     const t = totals(qs, scores);
     return (
       <div className="page">
         <div className={`timer ${left < 0 ? 'timer-over' : ''}`}>
-          Ответ: {clock(left)} · 🔴 {fmt(t.red)}/{fmt(t.redMax)}
-          {mode === 'all' && ` · ⚫ ${fmt(t.black)}/${fmt(t.blackMax)}`}
+          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${clock(left)}`} · {exam.levels && '🔴 '}
+          {fmt(t.red)}/{fmt(t.redMax)}
+          {mode === 'all' && exam.levels && ` · ⚫ ${fmt(t.black)}/${fmt(t.blackMax)}`}
         </div>
-        <p className="muted small">Открывай эталон и отмечай, сколько баллов поставил бы себе экзаменатор.</p>
+        <p className="muted small">
+          {isTest
+            ? 'Открывай решение и отмечай, сколько баллов поставил бы себе проверяющий. Ответ без обоснования — не больше половины.'
+            : 'Открывай эталон и отмечай, сколько баллов поставил бы себе экзаменатор.'}
+        </p>
         {SECTIONS.map((sec) => {
           const list = qs.filter((q) => q.section === sec);
           if (!list.length) return null;
@@ -240,9 +291,9 @@ export function MockPage() {
           <div className="stat-num">
             {fmt(t.red)} / {fmt(t.redMax)}
           </div>
-          <div className="stat-label">🔴 основной уровень</div>
+          <div className="stat-label">{exam.levels ? '🔴 основной уровень' : 'баллов'}</div>
         </div>
-        {mode === 'all' && (
+        {mode === 'all' && exam.levels && (
           <div className="stat">
             <div className="stat-num">
               {fmt(t.black)} / {fmt(t.blackMax)}
@@ -257,7 +308,7 @@ export function MockPage() {
           .filter((q) => q.parts.some((p, i) => (scores[`${q.n}:${i}`] ?? 0) < p.max))
           .map((q) => (
             <li key={q.n}>
-              {q.n}. {q.facet ? q.facet.unit.title : <Md text={q.task!.prompt.split('\n')[0]} inline />}{' '}
+              {q.n}. {q.facet ? q.facet.unit.title : q.label ?? <Md text={q.task!.prompt.split('\n')[0]} inline />}{' '}
               <span className="muted small">
                 ({q.parts.map((p, i) => `${fmt(scores[`${q.n}:${i}`] ?? 0)}/${fmt(p.max)}`).join(' + ')})
               </span>
@@ -266,24 +317,31 @@ export function MockPage() {
       </ul>
       <div className="row">
         <button className="primary" onClick={() => setStage('intro')}>
-          Новый билет
+          Ещё раз
         </button>
-        <Link className="btn" to="/cards?last=1&kind=definition,statement,proof">
-          Повторить слабое
-        </Link>
+        {isTest ? (
+          <Link className="btn" to={path('/tasks')}>
+            К банку задач
+          </Link>
+        ) : (
+          <Link className="btn" to={path('/cards?last=1&kind=definition,statement,proof')}>
+            Повторить слабое
+          </Link>
+        )}
       </div>
     </div>
   );
 }
 
-function questionTitle(q: TicketQuestion): string {
+function questionTitle(cat: Catalog, q: TicketQuestion): string {
   if (q.task) return '';
   const f = q.facet!;
-  const lemmas = f.kind === 'proof' ? lemmaChain(f.unit) : [];
+  const lemmas = f.kind === 'proof' ? cat.lemmaChain(f.unit) : [];
   return lemmas.length ? `${f.unit.title} (вместе с ${lemmas.length === 1 ? 'леммой' : 'леммами'}: ${lemmas.map((l) => l.title).join('; ')})` : f.unit.title;
 }
 
 function TicketList({ qs }: { qs: TicketQuestion[] }) {
+  const cat = useCat();
   return (
     <>
       {SECTIONS.map((sec) => {
@@ -295,11 +353,11 @@ function TicketList({ qs }: { qs: TicketQuestion[] }) {
             {list.map((q) => (
               <div key={q.n} className="tq">
                 <div className="tq-head">
-                  <Stars scales={q.scales} />
-                  <span className="tq-n">Вопрос {q.n}</span>
+                  {cat.exam.levels && <Stars scales={q.scales} />}
+                  <span className="tq-n">{q.task && cat.exam.mock.kind === 'test' ? 'Задача' : 'Вопрос'} {q.n}</span>
                   <b>{q.parts.map((p) => fmt(p.max)).join(' + ')} б.</b>
                 </div>
-                <div className="tq-body">{q.task ? <Md text={q.task.prompt} /> : questionTitle(q)}</div>
+                <div className="tq-body">{q.task ? <Md text={q.task.prompt} /> : questionTitle(cat, q)}</div>
               </div>
             ))}
           </section>
@@ -326,16 +384,18 @@ function AnswerQuestion({
   setScore: (k: string, v: number) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const cat = useCat();
   return (
     <div className="tq">
       <div className="tq-head">
-        <Stars scales={q.scales} />
-        <span className="tq-n">Вопрос {q.n}</span>
+        {cat.exam.levels && <Stars scales={q.scales} />}
+        <span className="tq-n">{q.task && cat.exam.mock.kind === 'test' ? 'Задача' : 'Вопрос'} {q.n}</span>
         {q.facet && <span className="tag">{KIND_LABEL[q.facet.kind]}</span>}
+        {q.task && cat.exam.mock.kind === 'test' && <span className="tag">{TASK_TYPE_LABEL[q.task.type]}</span>}
       </div>
       <div className="tq-body">{q.task ? <Md text={q.task.prompt} /> : <b>{q.facet!.unit.title}</b>}</div>
       {!open ? (
-        <button onClick={() => setOpen(true)}>Показать эталон</button>
+        <button onClick={() => setOpen(true)}>{q.task ? 'Показать решение' : 'Показать эталон'}</button>
       ) : q.task ? (
         <div className="answer">
           <Md text={q.task.answer} />
@@ -363,8 +423,33 @@ function AnswerQuestion({
 }
 
 function MockHistory() {
+  const { exam } = useCat();
   const st = useProgress();
   if (!st.mocks.length) return null;
+  if (!exam.levels)
+    return (
+      <section>
+        <h3>История</h3>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Баллы</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...st.mocks].reverse().map((m) => (
+              <tr key={m.date}>
+                <td>{when(m.date)}</td>
+                <td>
+                  {fmt(m.red)}/{fmt(m.redMax)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    );
   return (
     <section>
       <h3>История</h3>
@@ -380,7 +465,7 @@ function MockHistory() {
         <tbody>
           {[...st.mocks].reverse().map((m) => (
             <tr key={m.date}>
-              <td>{new Date(m.date).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+              <td>{when(m.date)}</td>
               <td>{m.mode === 'basic' ? 'основной' : '+ продвинутый'}</td>
               <td>
                 {fmt(m.red)}/{fmt(m.redMax)}
@@ -393,3 +478,5 @@ function MockHistory() {
     </section>
   );
 }
+
+const when = (d: number) => new Date(d).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

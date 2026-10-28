@@ -1,8 +1,10 @@
 import type { Level, Scale } from '../content/schema';
-import { setMode, useProgress, type Status } from '../store/progress';
+import { useProgress, useStore, type Status } from '../store/progress';
 
 export function LevelSwitch() {
+  const store = useStore();
   const { mode } = useProgress();
+  const setMode = (m: typeof mode) => store.setMode(m);
   return (
     <div className="seg" role="radiogroup" aria-label="Уровень">
       <button role="radio" aria-checked={mode === 'basic'} className={mode === 'basic' ? 'on' : ''} onClick={() => setMode('basic')}>

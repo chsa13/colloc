@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TASK_TYPE_LABEL, type Task, type TaskType } from '../content/schema';
-import { orderByPriority, taskKey, topicById, visibleTasks, visibleTopics } from '../engine/catalog';
-import { getState, useProgress } from '../store/progress';
+import { orderByPriority, taskKey } from '../engine/catalog';
+import { useCat } from '../exam';
+import { useProgress, useStore } from '../store/progress';
 import { Grade } from '../ui/Grade';
 import { StatusDot, Stars } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 import { fmt } from './HomePage';
 
 export function TasksPage() {
+  const cat = useCat();
+  const store = useStore();
   const st = useProgress();
   const [sp, setSp] = useSearchParams();
   const type = (sp.get('type') ?? '') as TaskType | '';
@@ -21,23 +24,22 @@ export function TasksPage() {
   };
 
   const list = useMemo(() => {
-    const s = getState();
-    const pool = visibleTasks(s.mode).filter((t) => (!type || t.type === type) && (!topic || t.topic === topic));
+    const s = store.get();
+    const pool = cat.visibleTasks(s.mode).filter((t) => (!type || t.type === type) && (!topic || t.topic === topic));
     return orderByPriority(pool, taskKey, s);
     // порядок фиксируем на фильтр, чтобы список не прыгал после оценки
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, topic, st.mode]);
+  }, [type, topic, st.mode, cat]);
+  const types = (Object.keys(TASK_TYPE_LABEL) as TaskType[]).filter((x) => cat.tasks.some((t) => t.type === x));
 
   return (
     <div className="page">
       <h1>Задачи</h1>
-      <p className="muted">
-        Блок «Задачи» билета: 1–1,5 балла за каждую. Сначала реши сам, потом открывай подсказки по одной, и только потом ответ.
-      </p>
+      <p className="muted">{cat.exam.tasksNote}</p>
       <div className="filters">
         <select value={type} onChange={(e) => set('type', e.target.value)}>
           <option value="">Все типы</option>
-          {(Object.keys(TASK_TYPE_LABEL) as TaskType[]).map((t) => (
+          {types.map((t) => (
             <option key={t} value={t}>
               {TASK_TYPE_LABEL[t]}
             </option>
@@ -45,7 +47,7 @@ export function TasksPage() {
         </select>
         <select value={topic} onChange={(e) => set('topic', e.target.value)}>
           <option value="">Все темы</option>
-          {visibleTopics(st.mode).map((t) => (
+          {cat.visibleTopics(st.mode).map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
             </option>
@@ -61,6 +63,7 @@ export function TasksPage() {
 }
 
 export function TaskCard({ task, n, showGrade = true }: { task: Task; n?: number; showGrade?: boolean }) {
+  const cat = useCat();
   const st = useProgress();
   const [hints, setHints] = useState(0);
   const [open, setOpen] = useState(false);
@@ -69,10 +72,10 @@ export function TaskCard({ task, n, showGrade = true }: { task: Task; n?: number
     <article className="task">
       <header className="task-head">
         {n !== undefined && <span className="task-n">{n}</span>}
-        <Stars scales={task.scales} />
+        {cat.exam.levels && <Stars scales={task.scales} />}
         <span className="tag">{TASK_TYPE_LABEL[task.type]}</span>
         <span className="muted small">
-          {fmt(task.points)} б. · {topicById.get(task.topic)?.title}
+          {fmt(task.points)} б. · {cat.topicById.get(task.topic)?.title}
           {task.source ? ` · ${task.source}` : ''}
         </span>
         <StatusDot status={st.items[key]?.status ?? 'new'} />

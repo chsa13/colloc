@@ -57,7 +57,7 @@ export interface Topic {
   units: Unit[];
 }
 
-export type TaskType = 'quantifiers' | 'true-false' | 'prove' | 'compute';
+export type TaskType = 'quantifiers' | 'true-false' | 'prove' | 'compute' | 'construct';
 
 export interface Task {
   id: string;
@@ -72,6 +72,55 @@ export interface Task {
   source?: string;
 }
 
+/** Разделы сайта, которые есть у экзамена. */
+export type Feature = 'topics' | 'cards' | 'proofs' | 'quant' | 'tasks' | 'mock';
+
+/** Позиция пробной контрольной: одна задача из подходящих по теме и типу. */
+export interface MockSlot {
+  label: string;
+  topics?: string[];
+  types?: TaskType[];
+}
+
+/**
+ * Пробник. ticket — билет коллоквиума (теория + задачи, подготовка и ответ по таймеру);
+ * test — письменная контрольная из задач банка: решаешь по таймеру, потом проверяешь себя.
+ */
+export type MockSpec =
+  | { kind: 'ticket'; title: string; prepMin: number; answerMin: number }
+  | { kind: 'test'; title: string; minutes: number; slots: MockSlot[] };
+
+/** Экзамен (коллоквиум, контрольная…) — всё, что нужно сайту, чтобы собрать для него раздел. */
+export interface Exam {
+  /** Часть адреса: #/<id>/cards. */
+  id: string;
+  subject: string;
+  /** «Коллоквиум», «Контрольная работа 2». */
+  kind: string;
+  /** Короткое название для шапки. */
+  short: string;
+  /** Один символ для значка. */
+  icon: string;
+  /** Первый и последний день проведения (ISO, YYYY-MM-DD). */
+  dates: [string, string];
+  /** Когда — по-человечески: «26–30 октября», «5 ноября, 10:00–11:00». */
+  when: string;
+  /** Формат одной строкой: время, что можно, как сдаётся. */
+  format: string;
+  /** Что входит: «Лонгриды 1–15», «Темы недель 6–8». */
+  scope: string;
+  /** Есть ли продвинутый уровень (переключатель 🔴 / 🔴+⚫). */
+  levels: boolean;
+  features: Feature[];
+  mock: MockSpec;
+  /** Пояснение над банком задач. */
+  tasksNote: string;
+  /** Страница «Как устроено»: регламент и советы, Markdown. */
+  how: string;
+  topics: Topic[];
+  tasks: Task[];
+}
+
 export const KIND_LABEL: Record<Kind, string> = {
   definition: 'Определение',
   statement: 'Формулировка',
@@ -83,6 +132,7 @@ export const TASK_TYPE_LABEL: Record<TaskType, string> = {
   'true-false': 'Верно ли',
   prove: 'Доказать',
   compute: 'Найти',
+  construct: 'Построить',
 };
 
 /** Строка с LaTeX без экранирования обратных слешей. */

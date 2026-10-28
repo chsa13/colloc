@@ -1,31 +1,38 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { lemmaChain, orderByPriority, proofPlan, unitById, visibleFacets, visibleTopics } from '../engine/catalog';
+import { orderByPriority } from '../engine/catalog';
 import { shuffle } from '../engine/ticket';
-import { getState, useProgress } from '../store/progress';
+import { useCat, usePath } from '../exam';
+import { useProgress, useStore } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Grade } from '../ui/Grade';
 import { LevelBadge, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 
 export function ProofsPage() {
+  const cat = useCat();
+  const path = usePath();
+  const store = useStore();
   const st = useProgress();
-  const proofs = visibleFacets(st.mode).filter((f) => f.kind === 'proof');
-  const nextUp = orderByPriority(proofs, (f) => f.key, getState())[0];
+  const proofs = cat.visibleFacets(st.mode).filter((f) => f.kind === 'proof');
+  const nextUp = orderByPriority(proofs, (f) => f.key, store.get())[0];
   return (
     <div className="page">
       <h1>Доказательства</h1>
       <p className="muted">
-        В билете за доказательство дают 0,5 за формулировку + 2 балла (⚫: + 3). Тренируй по шагам: вспомни шаг → открой → сравни.
+        {cat.exam.mock.kind === 'ticket'
+          ? 'В билете за доказательство дают 0,5 за формулировку + 2 балла (⚫: + 3).'
+          : 'На контрольной надо объяснять, почему ответ верен, — а для этого нужно понимать, почему верны теоремы.'}{' '}
+        Тренируй по шагам: вспомни шаг → открой → сравни.
       </p>
       {nextUp && (
         <p>
-          <Link className="btn primary" to={`/proofs/${nextUp.unit.id}`}>
+          <Link className="btn primary" to={path(`/proofs/${nextUp.unit.id}`)}>
             Следующее по приоритету: {nextUp.unit.title}
           </Link>
         </p>
       )}
-      {visibleTopics(st.mode).map((t) => {
+      {cat.visibleTopics(st.mode).map((t) => {
         const ps = proofs.filter((p) => p.topic.id === t.id);
         if (!ps.length) return null;
         return (
@@ -34,11 +41,11 @@ export function ProofsPage() {
             <ul className="plist">
               {ps.map((p) => (
                 <li key={p.key}>
-                  <StatusDot status={st.items[p.key]?.status ?? 'new'} /> <LevelBadge level={p.level} />{' '}
-                  <Link to={`/proofs/${p.unit.id}`}>{p.unit.title}</Link>{' '}
+                  <StatusDot status={st.items[p.key]?.status ?? 'new'} /> {cat.exam.levels && <LevelBadge level={p.level} />}{' '}
+                  <Link to={path(`/proofs/${p.unit.id}`)}>{p.unit.title}</Link>{' '}
                   <span className="muted small">
                     · {p.unit.proof!.steps.length} шагов
-                    {lemmaChain(p.unit).length > 0 && ` + ${lemmaChain(p.unit).length} лемм.`}
+                    {cat.lemmaChain(p.unit).length > 0 && ` + ${cat.lemmaChain(p.unit).length} лемм.`}
                   </span>
                   {p.unit.aux && <span className="tag">лемма</span>}
                 </li>
@@ -56,23 +63,25 @@ type TrainMode = 'steps' | 'order' | 'full';
 export function ProofPage() {
   const { id } = useParams();
   const st = useProgress();
-  const found = unitById.get(id ?? '');
+  const cat = useCat();
+  const path = usePath();
+  const found = cat.unitById.get(id ?? '');
   const [mode, setMode] = useState<TrainMode>('steps');
-  if (!found || !found.unit.proof) return <div className="page">Доказательство не найдено. <Link to="/proofs">К списку</Link></div>;
+  if (!found || !found.unit.proof) return <div className="page">Доказательство не найдено. <Link to={path('/proofs')}>К списку</Link></div>;
   const { unit, topic } = found;
   const key = `${unit.id}:proof`;
 
-  const all = visibleFacets(st.mode).filter((f) => f.kind === 'proof');
+  const all = cat.visibleFacets(st.mode).filter((f) => f.kind === 'proof');
   const i = all.findIndex((f) => f.unit.id === unit.id);
   const nextProof = all[(i + 1) % all.length];
 
   return (
     <div className="page">
       <div className="crumbs">
-        <Link to="/proofs">Доказательства</Link> / {topic.title}
+        <Link to={path('/proofs')}>Доказательства</Link> / {topic.title}
       </div>
       <h1>
-        <LevelBadge level={unit.proof!.level} /> {unit.title}
+        {cat.exam.levels && <LevelBadge level={unit.proof!.level} />} {unit.title}
       </h1>
       <div className="tabs">
         <button className={mode === 'steps' ? 'on' : ''} onClick={() => setMode('steps')}>
@@ -99,7 +108,7 @@ export function ProofPage() {
       </div>
       {nextProof && nextProof.unit.id !== unit.id && (
         <p>
-          <Link to={`/proofs/${nextProof.unit.id}`}>Следующее: {nextProof.unit.title} →</Link>
+          <Link to={path(`/proofs/${nextProof.unit.id}`)}>Следующее: {nextProof.unit.title} →</Link>
         </p>
       )}
     </div>
@@ -107,10 +116,11 @@ export function ProofPage() {
 }
 
 function StepsMode({ unitId }: { unitId: string }) {
-  const { unit } = unitById.get(unitId)!;
+  const cat = useCat();
+  const { unit } = cat.unitById.get(unitId)!;
   const p = unit.proof!;
-  const plan = proofPlan(unit);
-  const lemmas = lemmaChain(unit);
+  const plan = cat.proofPlan(unit);
+  const lemmas = cat.lemmaChain(unit);
   const [stmtOpen, setStmtOpen] = useState(false);
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [shown, setShown] = useState(0);
@@ -168,8 +178,9 @@ function StepsMode({ unitId }: { unitId: string }) {
 }
 
 function OrderMode({ unitId }: { unitId: string }) {
-  const { unit } = unitById.get(unitId)!;
-  const steps = useMemo(() => proofPlan(unit), [unit]);
+  const cat = useCat();
+  const { unit } = cat.unitById.get(unitId)!;
+  const steps = useMemo(() => cat.proofPlan(unit), [cat, unit]);
   const order = useMemo(() => shuffle(steps.map((_, i) => i)), [steps]);
   const [placed, setPlaced] = useState<number[]>([]);
   const [wrong, setWrong] = useState<number | null>(null);

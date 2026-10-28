@@ -1,9 +1,6 @@
-import type { Scale, Task } from '../content/schema';
+import type { MockSlot, Scale, Task } from '../content/schema';
 import type { Mode } from '../store/progress';
-import { facets, visibleTasks, type Facet } from './catalog';
-
-// Генератор билета по структуре демо-версии:
-// 3 определения, 3(+1⚫) формулировки, 2(+1⚫) доказательства, 3(+1⚫) задачи.
+import type { Catalog, Facet } from './catalog';
 
 export type Section = 'Определения' | 'Формулировки' | 'Доказательства' | 'Задачи';
 
@@ -15,6 +12,8 @@ export interface Part {
 export interface TicketQuestion {
   n: number;
   section: Section;
+  /** название позиции пробной контрольной */
+  label?: string;
   scales: Scale[];
   parts: Part[];
   facet?: Facet;
@@ -41,12 +40,22 @@ function take<T>(pool: T[], n: number, used: Set<string>, id: (x: T) => string):
   return out;
 }
 
-export function generateTicket(mode: Mode): TicketQuestion[] {
+/** Пробник экзамена: билет коллоквиума или контрольная — по конфигу экзамена. */
+export function generateMock(cat: Catalog, mode: Mode): TicketQuestion[] {
+  const spec = cat.exam.mock;
+  return spec.kind === 'ticket' ? generateTicket(cat, mode) : generateTest(cat, mode, spec.slots);
+}
+
+/**
+ * Билет по структуре демо-версии коллоквиума:
+ * 3 определения, 3(+1⚫) формулировки, 2(+1⚫) доказательства, 3(+1⚫) задачи.
+ */
+export function generateTicket(cat: Catalog, mode: Mode): TicketQuestion[] {
   const usedUnits = new Set<string>();
   const byUnit = (f: Facet) => f.unit.id;
   const pick = (kind: Facet['kind'], level: Facet['level'], n: number) =>
     take(
-      facets.filter((f) => f.kind === kind && f.level === level && !f.unit.aux),
+      cat.facets.filter((f) => f.kind === kind && f.level === level && !f.unit.aux),
       n,
       usedUnits,
       byUnit,
@@ -59,7 +68,7 @@ export function generateTicket(mode: Mode): TicketQuestion[] {
   const stmts = pick('statement', 'basic', 3);
   const stmtsAdv = mode === 'all' ? pick('statement', 'advanced', 1) : [];
 
-  const all = visibleTasks(mode);
+  const all = cat.visibleTasks(mode);
   const usedTasks = new Set<string>();
   const tid = (t: Task) => t.id;
   const redOnly = all.filter((t) => t.scales.length === 1 && t.scales[0] === 'red');
@@ -96,6 +105,20 @@ export function generateTicket(mode: Mode): TicketQuestion[] {
     ...tasksPicked.map((t) => ({ section: 'Задачи' as const, scales: t.scales, parts: [{ label: 'Решение', max: t.points }], task: t })),
   ];
   return qs.map((q, i) => ({ ...q, n: i + 1 }));
+}
+
+/** Контрольная: по одной задаче на каждую позицию, без повторов. */
+export function generateTest(cat: Catalog, mode: Mode, slots: MockSlot[]): TicketQuestion[] {
+  const used = new Set<string>();
+  const pool = cat.visibleTasks(mode);
+  const qs: TicketQuestion[] = [];
+  for (const slot of slots) {
+    const fits = pool.filter((t) => (!slot.topics || slot.topics.includes(t.topic)) && (!slot.types || slot.types.includes(t.type)));
+    const [t] = take(fits, 1, used, (x) => x.id);
+    if (!t) continue;
+    qs.push({ n: qs.length + 1, section: 'Задачи', label: slot.label, scales: t.scales, parts: [{ label: 'Решение', max: t.points }], task: t });
+  }
+  return qs;
 }
 
 export interface Totals {

@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { generateTicket, totals } from '../src/engine/ticket';
+import { exams } from '../content';
+import { catalogOf } from '../src/engine/catalog';
+import { generateMock, generateTicket, totals } from '../src/engine/ticket';
 import { makeQuestion, randomProblem, type PointType, type ValueType } from '../src/engine/quant';
+
+const matan = catalogOf(exams.find((e) => e.id === 'matan-colloc')!);
 
 describe('ticket', () => {
   it('basic ticket: 11 questions, 11 red points, nothing black-only', () => {
     for (let i = 0; i < 50; i++) {
-      const qs = generateTicket('basic');
+      const qs = generateTicket(matan, 'basic');
       expect(qs.length).toBe(11);
       expect(qs.every((q) => q.scales.includes('red'))).toBe(true);
       const t = totals(qs, {});
@@ -19,10 +23,29 @@ describe('ticket', () => {
   });
 
   it('advanced ticket adds black-only questions', () => {
-    const qs = generateTicket('all');
+    const qs = generateTicket(matan, 'all');
     expect(qs.length).toBe(14);
     expect(qs.some((q) => !q.scales.includes('red'))).toBe(true);
   });
+});
+
+describe('test mocks', () => {
+  for (const exam of exams.filter((e) => e.mock.kind === 'test')) {
+    it(`${exam.id}: one distinct task per slot`, () => {
+      const cat = catalogOf(exam);
+      const slots = exam.mock.kind === 'test' ? exam.mock.slots : [];
+      for (let i = 0; i < 50; i++) {
+        const qs = generateMock(cat, 'basic');
+        expect(qs.length).toBe(slots.length);
+        expect(new Set(qs.map((q) => q.task!.id)).size).toBe(qs.length);
+        qs.forEach((q, j) => {
+          const s = slots[j];
+          expect(!s.topics || s.topics.includes(q.task!.topic), q.task!.id).toBe(true);
+          expect(!s.types || s.types.includes(q.task!.type), q.task!.id).toBe(true);
+        });
+      }
+    });
+  }
 });
 
 describe('quantifiers', () => {

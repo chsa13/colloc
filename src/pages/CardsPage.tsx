@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { KIND_LABEL, type Kind } from '../content/schema';
-import { facets, lemmaChain, orderByPriority, visibleFacets, visibleTopics, type Facet } from '../engine/catalog';
+import { orderByPriority, type Catalog, type Facet } from '../engine/catalog';
 import { loadSession, saveSession, type CardSession } from '../store/cardSession';
 import { shuffle } from '../engine/ticket';
-import { getState, useProgress } from '../store/progress';
+import { useCat, usePath } from '../exam';
+import { useProgress, useStore } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Md } from '../ui/Md';
 import { Grade } from '../ui/Grade';
@@ -17,15 +18,19 @@ const ASK: Record<Kind, string> = {
 };
 
 /** Что спросить по карточке: у теоремы с доказательством — формулировку и доказательство сразу. */
-function askFor(f: Facet): string {
+function askFor(cat: Catalog, f: Facet): string {
   if (f.kind !== 'proof') return ASK[f.kind];
-  const lemmas = lemmaChain(f.unit).length;
+  const lemmas = cat.lemmaChain(f.unit).length;
   const head = f.unit.statement ? 'Сформулируй и докажи' : 'Докажи';
   return lemmas ? `${head} (вместе с ${lemmas === 1 ? 'леммой' : 'леммами'})` : head;
 }
 
 export function CardsPage() {
   const [sp, setSp] = useSearchParams();
+  const cat = useCat();
+  const path = usePath();
+  const examId = cat.exam.id;
+  const store = useStore();
   const st = useProgress();
   const topic = sp.get('topic') ?? '';
   const kindParam = sp.get('kind');
@@ -45,8 +50,8 @@ export function CardsPage() {
   // и сохраняется в браузере: после перезагрузки продолжаем с той же карточки.
   const filterKey = `${st.mode}|${topic}|${kinds.join(',')}|${onlyWeak}`;
   const buildQueue = (): string[] => {
-    const s = getState();
-    const visible = visibleFacets(s.mode);
+    const s = store.get();
+    const visible = cat.visibleFacets(s.mode);
     // Если доказательства в наборе, теорема спрашивается одной карточкой «сформулируй и докажи».
     const withProof = new Set(kinds.includes('proof') ? visible.filter((f) => f.kind === 'proof').map((f) => f.unit.id) : []);
     let pool = visible.filter(
@@ -57,16 +62,16 @@ export function CardsPage() {
     return orderByPriority(pool, (f) => f.key, s).map((f) => f.key);
   };
   const fresh = (): CardSession => ({ fk: filterKey, keys: buildQueue(), pos: 0, step: 0, updated: Date.now() });
-  const restoreOrFresh = (): CardSession => loadSession(filterKey) ?? fresh();
+  const restoreOrFresh = (): CardSession => loadSession(examId, filterKey) ?? fresh();
 
   const [session, setSession] = useState<CardSession>(restoreOrFresh);
   // Сменились фильтры — берём сохранённую для них сессию или начинаем новую.
   if (session.fk !== filterKey) setSession(restoreOrFresh());
   useEffect(() => {
-    saveSession(session);
-  }, [session]);
+    saveSession(examId, session);
+  }, [examId, session]);
 
-  const queue = session.keys.map((k) => facetByKey.get(k)).filter((f): f is Facet => !!f);
+  const queue = session.keys.map((k) => cat.facetByKey.get(k)).filter((f): f is Facet => !!f);
   const pos = session.pos;
   const step = session.step;
   const setStep = (v: number | ((x: number) => number)) =>
@@ -110,7 +115,7 @@ export function CardsPage() {
         ))}
         <select value={topic} onChange={(e) => update({ topic: e.target.value })}>
           <option value="">Все темы</option>
-          {visibleTopics(st.mode).map((t) => (
+          {cat.visibleTopics(st.mode).map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
             </option>
@@ -124,7 +129,7 @@ export function CardsPage() {
 
       {queue.length === 0 ? (
         <div className="empty">
-          {onlyWeak ? 'Слабых мест не осталось — отлично! Сними фильтр или пройди пробный билет.' : 'Под эти фильтры ничего не подходит.'}
+          {onlyWeak ? `Слабых мест не осталось — отлично! Сними фильтр или пройди пробник: «${cat.exam.mock.title}».` : 'Под эти фильтры ничего не подходит.'}
         </div>
       ) : !card ? (
         <div className="empty">
@@ -134,7 +139,7 @@ export function CardsPage() {
               Начать заново
             </button>{' '}
             <button onClick={() => setSession({ ...fresh(), keys: shuffle(buildQueue()) })}>Пройти в случайном порядке</button>{' '}
-            <Link to="/mock">Пробный билет →</Link>
+            <Link to={path('/mock')}>{cat.exam.mock.title} →</Link>
           </p>
         </div>
       ) : (
@@ -154,7 +159,7 @@ export function CardsPage() {
           </div>
           <div className="card-q">
             <div className="card-kind">
-              <LevelBadge level={card.level} />{' '}
+              {cat.exam.levels && <LevelBadge level={card.level} />}{' '}
               {isCombined(card) ? (
                 <>
                   Формулировка <StatusDot status={st.items[`${card.unit.id}:statement`]?.status ?? 'new'} /> + доказательство{' '}
@@ -167,7 +172,7 @@ export function CardsPage() {
               )}
             </div>
             <h2>{card.unit.title}</h2>
-            <div className="muted">{askFor(card)}</div>
+            <div className="muted">{askFor(cat, card)}</div>
           </div>
           {isCombined(card) ? (
             <CombinedAnswer card={card} step={step} setStep={setStep} onDone={next} />
@@ -184,7 +189,7 @@ export function CardsPage() {
             </>
           )}
           <div className="card-foot">
-            <Link className="small" to={`/topic/${card.topic.id}?u=${card.unit.id}`}>
+            <Link className="small" to={path(`/topic/${card.topic.id}?u=${card.unit.id}`)}>
               Открыть в справочнике
             </Link>
             <button className="link small" onClick={next}>
@@ -199,8 +204,6 @@ export function CardsPage() {
 }
 
 /** Теорема, у которой спрашиваются и формулировка, и доказательство. */
-const facetByKey = new Map(facets.map((f) => [f.key, f]));
-
 function isCombined(f: Facet): boolean {
   return f.kind === 'proof' && !!f.unit.statement;
 }
