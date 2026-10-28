@@ -1038,3 +1038,7 @@ select,
   padding-top: 0.7em;
   margin-top: 0.7em;
 }
+.lead {
+  font-size: 1.05rem;
+  margin: 0 0 0.3em;
+}
