@@ -58,7 +58,9 @@ src/
 tests/                      # контент, движок, исходники
 ```
 
-Ключи localStorage: `exams:<id>:<progress|cards|mock>:v1`. У коллоквиума по матану оставлены старые ключи
+Ключи localStorage: `exams:<id>:<progress|cards|mock>:v1`.
+
+Статистика — Umami Cloud (`src/analytics.ts`, скрипт в `index.html`), без cookies. Просмотры страниц шлём вручную при смене маршрута (HashRouter), события: `mock-start`, `mock-finish` (exam, percent) и `activity` — сводка раз в 5 минут и при уходе со страницы (exam, theory — оценённые карточки и доказательства, tasks — открытые решения). На localhost не работает (`data-domains`). У коллоквиума по матану оставлены старые ключи
 (`colloc-matan-v1` и т.д.) — сайт переехал с `/colloc` на `/exams`, но домен тот же, и прогресс сохранился.
 
 ## Б. Коллоквиум по матанализу

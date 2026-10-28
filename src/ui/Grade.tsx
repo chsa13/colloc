@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { countActivity } from '../analytics';
+import { useCat } from '../exam';
 import { useStore, type Status } from '../store/progress';
 
 /** Три кнопки самооценки; клавиши 1/2/3. */
@@ -17,7 +19,10 @@ export function Grade({
   hotkeys?: boolean;
 }) {
   const store = useStore();
+  const examId = useCat().exam.id;
   const go = (s: Exclude<Status, 'new'>) => {
+    // задачи считаются по открытию решения, здесь — только теория
+    if (!itemKey.startsWith('task:')) countActivity(examId, 'theory');
     store.mark(itemKey, s);
     for (const k of alsoKeys) store.mark(k, s);
     onDone?.();

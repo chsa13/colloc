@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TASK_TYPE_LABEL, type Task, type TaskType } from '../content/schema';
 import { orderByPriority, taskKey } from '../engine/catalog';
+import { countActivity } from '../analytics';
 import { useCat } from '../exam';
 import { useProgress, useStore } from '../store/progress';
 import { Grade } from '../ui/Grade';
@@ -94,7 +95,16 @@ export function TaskCard({ task, n, showGrade = true }: { task: Task; n?: number
       )}
       <div className="row">
         {hints < task.hints.length && !open && <button onClick={() => setHints(hints + 1)}>Подсказка</button>}
-        {!open && <button onClick={() => setOpen(true)}>Показать решение</button>}
+        {!open && (
+          <button
+            onClick={() => {
+              setOpen(true);
+              countActivity(cat.exam.id, 'tasks');
+            }}
+          >
+            Показать решение
+          </button>
+        )}
       </div>
       {open && showGrade && <Grade itemKey={key} current={st.items[key]?.status} hotkeys={false} />}
     </article>

@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useEffect, type ReactElement } from 'react';
 import type { Feature } from './content/schema';
+import { trackPage } from './analytics';
 import { catalogOf, examById } from './engine/catalog';
 import { ExamProvider, useCat, usePath } from './exam';
 import { LevelSwitch } from './ui/LevelSwitch';
@@ -21,6 +22,9 @@ function ScrollTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    // заголовок страницы выставляют эффекты раздела, поэтому читаем его чуть позже
+    const t = setTimeout(() => trackPage(pathname, document.title), 0);
+    return () => clearTimeout(t);
   }, [pathname]);
   return null;
 }
@@ -137,7 +141,8 @@ function Footer({ exam = false }: { exam?: boolean }) {
     <footer className="foot">
       {exam && <ExamFooterLinks />}
       <span className="muted">
-        Неофициальный конспект, составленный студентами по программе курсов; не заменяет лонгриды. Прогресс хранится только в этом браузере.
+        Неофициальный конспект, составленный студентами по программе курсов; не заменяет лонгриды. Прогресс хранится только в этом браузере;
+        сайт собирает анонимную статистику посещений — без cookies и личных данных.
       </span>
     </footer>
   );

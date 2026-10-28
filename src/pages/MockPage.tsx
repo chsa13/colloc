@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { KIND_LABEL, TASK_TYPE_LABEL } from '../content/schema';
 import { taskKey, type Catalog } from '../engine/catalog';
 import { generateMock, totals, type Section, type TicketQuestion } from '../engine/ticket';
+import { trackEvent } from '../analytics';
 import { useCat, usePath } from '../exam';
 import { storageKey, useProgress, useStore, type Mode } from '../store/progress';
 import { FacetBody } from '../ui/FacetView';
@@ -104,6 +105,7 @@ export function MockPage() {
   const start = () => {
     setModeLocal(st.mode);
     setQs(generateMock(cat, st.mode));
+    trackEvent('mock-start', { exam: exam.id });
     setScores({});
     setStarted(Date.now());
     setStage('prep');
@@ -117,6 +119,7 @@ export function MockPage() {
   const finish = () => {
     const t = totals(qs, scores);
     store.addMock({ date: Date.now(), mode, ...t });
+    trackEvent('mock-finish', { exam: exam.id, percent: t.redMax ? Math.round((t.red / t.redMax) * 100) : 0 });
     // Переносим результат в прогресс: ≥90% — знаю, ≥40% — частично, иначе не знаю.
     const verdict = (got: number, max: number) => (got >= 0.9 * max ? 'known' : got >= 0.4 * max ? 'shaky' : 'weak');
     for (const q of qs) {
