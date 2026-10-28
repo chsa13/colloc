@@ -12,13 +12,18 @@ declare global {
 }
 
 // Скрипт грузится с defer и может появиться позже первого рендера — копим вызовы до его загрузки.
+// Важно: у тега скрипта id НЕ «umami» — элементы с id доступны как window.<id>, и трекер решил бы,
+// что window.umami уже есть, и не создал бы себя.
 const queue: ((u: Umami) => void)[] = [];
+
+const ready = (): Umami | undefined => (typeof window.umami?.track === 'function' ? window.umami : undefined);
 
 function run(call: (u: Umami) => void) {
   if (typeof window === 'undefined') return;
-  if (window.umami) {
+  const u = ready();
+  if (u) {
     try {
-      call(window.umami);
+      call(u);
     } catch {
       // статистика не должна ломать сайт
     }
@@ -26,7 +31,7 @@ function run(call: (u: Umami) => void) {
 }
 
 function flush() {
-  const u = window.umami;
+  const u = ready();
   if (!u) return;
   for (const call of queue.splice(0)) {
     try {
@@ -38,7 +43,7 @@ function flush() {
 }
 
 if (typeof window !== 'undefined') {
-  document.getElementById('umami')?.addEventListener('load', flush);
+  document.getElementById('umami-script')?.addEventListener('load', flush);
   // на случай, если скрипт загрузился раньше этого модуля
   queueMicrotask(flush);
 }
