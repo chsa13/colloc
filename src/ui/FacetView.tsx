@@ -133,6 +133,7 @@ export function UsesLinks({ unit }: { unit: Unit }) {
 export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
   const p = usePath();
   const st = useProgress();
+  const cat = useCat();
   const kinds = (['definition', 'statement', 'proof'] as const).filter((k) => unit[k]);
   return (
     <article className="unit" id={`u-${unit.id}`}>
@@ -151,7 +152,8 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
             <div className="facet-head">
               <LevelMark level={f.level} />
               <span className="kind">{KIND_LABEL[k]}</span>
-              <StatusDot status={st.items[key]?.status ?? 'new'} />
+              {/* у формулировки, которая не отдельный вопрос, своего статуса нет */}
+              {cat.facetByKey.has(key) && <StatusDot status={st.items[key]?.status ?? 'new'} />}
               {k === 'proof' && visible && (
                 <Link className="small" to={p(`/proofs/${unit.id}`)}>
                   тренировать →

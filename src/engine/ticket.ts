@@ -74,6 +74,13 @@ const proofQ = (facet: Facet, scales: Scale[], proofMax: number): Draft => ({
   ],
   facet,
 });
+/** Доказательство одним пунктом: формулировка и доказательство вместе (когда баллы заданы целиком). */
+const proofWholeQ = (facet: Facet, max: number): Draft => ({
+  section: 'Доказательства',
+  scales: RED,
+  parts: [{ label: 'Формулировка и доказательство', max }],
+  facet,
+});
 const taskQ = (task: Task, label?: string): Draft => ({
   section: 'Задачи',
   ...(label ? { label } : {}),
@@ -105,7 +112,7 @@ function pickForSlot(pool: Task[], slot: MockSlot, used: Set<string>): Task | un
 export function generateLayoutTicket(cat: Catalog, mode: Mode, layout: TicketLayout): TicketQuestion[] {
   const pick = facetPicker(cat);
   // Доказательства первыми, чтобы та же теорема не попала в формулировки.
-  const proofs = pick('proof', 'basic', layout.proofs);
+  const proofs = pick('proof', 'basic', layout.proofPoints?.length ?? layout.proofs);
   const defs = pick('definition', 'basic', layout.definitions);
   const stmts = pick('statement', 'basic', layout.statements);
 
@@ -119,9 +126,21 @@ export function generateLayoutTicket(cat: Catalog, mode: Mode, layout: TicketLay
   return numbered([
     ...defs.map((f) => defQ(f, RED)),
     ...stmts.map((f) => stmtQ(f, RED)),
-    ...proofs.map((f) => proofQ(f, RED, 2)),
+    ...proofQuestions(cat, proofs, layout),
     ...tasks,
   ]);
+}
+
+/**
+ * Вопросы-доказательства. Если баллы разные, более длинное доказательство (с леммами) получает больший вес:
+ * короткие теоремы идут на младшие позиции, длинные — на старшие.
+ */
+function proofQuestions(cat: Catalog, proofs: Facet[], layout: TicketLayout): Draft[] {
+  if (!layout.proofPoints) return proofs.map((f) => proofQ(f, RED, 2));
+  const len = (f: Facet) => cat.proofPlan(f.unit).length;
+  const byLength = [...proofs].sort((a, b) => len(a) - len(b));
+  const points = [...layout.proofPoints].sort((a, b) => a - b);
+  return byLength.map((f, i) => proofWholeQ(f, points[i]));
 }
 
 /**
@@ -178,11 +197,33 @@ export interface Totals {
   blackMax: number;
 }
 
-export function totals(qs: TicketQuestion[], scores: Record<string, number>): Totals {
+/** Правила подсчёта билета: допуск к доказательствам и потолок оценки. */
+export interface Scoring {
+  theoryGate?: number;
+  scoreCap?: number;
+}
+
+export function scoringOf(cat: Catalog): Scoring {
+  const spec = cat.exam.mock;
+  return spec.kind === 'ticket' && spec.layout ? { theoryGate: spec.layout.theoryGate, scoreCap: spec.layout.scoreCap } : {};
+}
+
+/** Сколько вопросов по теории сдано на полный балл. */
+export function theoryPassed(qs: TicketQuestion[], scores: Record<string, number>): number {
+  return qs.filter((q) => q.section === 'Определения' && q.parts.every((p, i) => (scores[`${q.n}:${i}`] ?? 0) >= p.max)).length;
+}
+
+/** Не сдан допуск: доказательства не засчитываются. */
+export function gateFailed(qs: TicketQuestion[], scores: Record<string, number>, rules: Scoring = {}): boolean {
+  return rules.theoryGate !== undefined && theoryPassed(qs, scores) < rules.theoryGate;
+}
+
+export function totals(qs: TicketQuestion[], scores: Record<string, number>, rules: Scoring = {}): Totals {
   const t: Totals = { red: 0, redMax: 0, black: 0, blackMax: 0 };
+  const locked = gateFailed(qs, scores, rules);
   for (const q of qs) {
     q.parts.forEach((p, i) => {
-      const got = scores[`${q.n}:${i}`] ?? 0;
+      const got = locked && q.section === 'Доказательства' ? 0 : (scores[`${q.n}:${i}`] ?? 0);
       if (q.scales.includes('red')) {
         t.red += got;
         t.redMax += p.max;
@@ -192,6 +233,10 @@ export function totals(qs: TicketQuestion[], scores: Record<string, number>): To
         t.blackMax += p.max;
       }
     });
+  }
+  if (rules.scoreCap !== undefined) {
+    t.red = Math.min(t.red, rules.scoreCap);
+    t.redMax = Math.min(t.redMax, rules.scoreCap);
   }
   return t;
 }

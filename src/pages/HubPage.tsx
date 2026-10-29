@@ -5,6 +5,7 @@ import { catalogOf, readiness, score, taskKey } from '../engine/catalog';
 import { useProgressOf } from '../store/progress';
 import { ExamStars } from '../ui/LevelSwitch';
 import { ProgressBar } from '../ui/ProgressBar';
+import { count } from '../plural';
 
 const DAY = 86_400_000;
 
@@ -25,20 +26,12 @@ export function phaseOf(exam: Exam, now = Date.now()): { phase: Phase; days: num
   return { phase: 'past', days: Math.round((t - end) / DAY) };
 }
 
-function plural(n: number, one: string, few: string, many: string): string {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-  return many;
-}
-
 /** «через 8 дней», «завтра», «идёт сейчас», «прошёл». */
 export function Countdown({ exam }: { exam: Exam }) {
   const { phase, days } = phaseOf(exam);
   if (phase === 'now') return <span className="badge badge-now">идёт сейчас</span>;
   if (phase === 'past') return <span className="badge badge-past">прошло</span>;
-  const text = days === 1 ? 'завтра' : `через ${days} ${plural(days, 'день', 'дня', 'дней')}`;
+  const text = days === 1 ? 'завтра' : `через ${count(days, 'день', 'дня', 'дней')}`;
   return <span className={`badge ${days <= 3 ? 'badge-hot' : 'badge-soon'}`}>{text}</span>;
 }
 
@@ -94,10 +87,12 @@ function ExamCard({ exam }: { exam: Exam }) {
             <span className="label">Теория · {Math.round(score(theory) * 100)}%</span>
             <ProgressBar r={theory} />
           </div>
-          <div>
-            <span className="label">Задачи · {Math.round(score(tasks) * 100)}%</span>
-            <ProgressBar r={tasks} />
-          </div>
+          {exam.features.includes('tasks') && (
+            <div>
+              <span className="label">Задачи · {Math.round(score(tasks) * 100)}%</span>
+              <ProgressBar r={tasks} />
+            </div>
+          )}
         </div>
       </div>
     </Link>

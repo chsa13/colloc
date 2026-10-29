@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCat } from '../exam';
 import { useProgress, useStore } from '../store/progress';
 import { LevelSwitch } from '../ui/LevelSwitch';
+import { count } from '../plural';
 
 export function SettingsPage() {
   const { exam } = useCat();
@@ -44,7 +45,7 @@ export function SettingsPage() {
       <section className="panel">
         <h3>Перенос прогресса</h3>
         <p className="muted small">
-          Прогресс хранится только в этом браузере ({Object.keys(st.items).length} отметок, {st.mocks.length} пробников). Чтобы перенести на
+          Прогресс хранится только в этом браузере ({count(Object.keys(st.items).length, 'отметка', 'отметки', 'отметок')}, {count(st.mocks.length, 'пробник', 'пробника', 'пробников')}). Чтобы перенести на
           другое устройство — скачай файл и загрузи его там.
         </p>
         <div className="row">

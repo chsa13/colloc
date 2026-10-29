@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KIND_LABEL, TASK_TYPE_LABEL, type TicketLayout } from '../content/schema';
 import { taskKey, type Catalog } from '../engine/catalog';
-import { generateMock, totals, type Section, type TicketQuestion } from '../engine/ticket';
+import { gateFailed, generateMock, scoringOf, theoryPassed, totals, type Scoring, type Section, type TicketQuestion } from '../engine/ticket';
 import { trackEvent } from '../analytics';
 import { useCat, usePath } from '../exam';
 import { storageKey, useProgress, useStore, type Mode } from '../store/progress';
@@ -75,6 +75,7 @@ export function MockPage() {
   // Время на работу и на ответ (у контрольной проверка без таймера).
   const PREP_MIN = spec.kind === 'ticket' ? spec.prepMin : spec.minutes;
   const ANSWER_MIN = spec.kind === 'ticket' ? spec.answerMin : null;
+  const rules = scoringOf(cat);
   const path = usePath();
   const store = useStore();
   const st = useProgress();
@@ -117,7 +118,7 @@ export function MockPage() {
   };
 
   const finish = () => {
-    const t = totals(qs, scores);
+    const t = totals(qs, scores, rules);
     store.addMock({ date: Date.now(), mode, ...t });
     trackEvent('mock-finish', { exam: exam.id, percent: t.redMax ? Math.round((t.red / t.redMax) * 100) : 0 });
     // Переносим результат в прогресс: ≥90% — знаю, ≥40% — частично, иначе не знаю.
@@ -127,8 +128,10 @@ export function MockPage() {
       if (q.task) store.mark(taskKey(q.task), verdict(got(0), q.parts[0].max));
       else if (q.facet) {
         if (q.facet.kind === 'proof') {
-          if (q.facet.unit.statement) store.mark(`${q.facet.unit.id}:statement`, verdict(got(0), q.parts[0].max));
-          store.mark(q.facet.key, verdict(got(1), q.parts[1].max));
+          // Доказательство бывает двумя пунктами (формулировка + доказательство) или одним.
+          const last = q.parts.length - 1;
+          if (cat.facetByKey.has(`${q.facet.unit.id}:statement`)) store.mark(`${q.facet.unit.id}:statement`, verdict(got(0), q.parts[0].max));
+          store.mark(q.facet.key, verdict(got(last), q.parts[last].max));
         } else store.mark(q.facet.key, verdict(got(0), q.parts[0].max));
       }
     }
@@ -180,7 +183,7 @@ export function MockPage() {
       <div className="page">
         <h1>{spec.title}</h1>
         <p>
-          Билет собирается случайно по структуре демо-версии.
+          {spec.kind === 'ticket' && spec.layout ? 'Билет собирается случайно из вопросов списка.' : 'Билет собирается случайно по структуре демо-версии.'}
           {exam.levels && (
             <>
               {' '}
@@ -206,6 +209,7 @@ export function MockPage() {
             ))}
           </tbody>
         </table>
+        <ScoringNote rules={rules} />
         <ol>
           <li>
             <b>Подготовка — {PREP_MIN} минут.</b> Пиши ответы на бумаге, как на коллоквиуме. Без материалов.
@@ -243,7 +247,7 @@ export function MockPage() {
 
   if (stage === 'answer') {
     const left = ANSWER_MIN === null ? 0 : answerStarted + ANSWER_MIN * 60_000 - now;
-    const t = totals(qs, scores);
+    const t = totals(qs, scores, rules);
     return (
       <div className="page">
         <div className={`timer ${left <= 0 && ANSWER_MIN !== null ? 'timer-over' : ''}`}>
@@ -256,6 +260,7 @@ export function MockPage() {
             ? 'Открывай решение и отмечай, сколько баллов поставил бы себе проверяющий. Ответ без обоснования — не больше половины.'
             : 'Открывай эталон и отмечай, сколько баллов поставил бы себе экзаменатор.'}
         </p>
+        <GateStatus qs={qs} scores={scores} rules={rules} />
         {SECTIONS.map((sec) => {
           const list = qs.filter((q) => q.section === sec);
           if (!list.length) return null;
@@ -280,7 +285,7 @@ export function MockPage() {
     );
   }
 
-  const t = totals(qs, scores);
+  const t = totals(qs, scores, rules);
   return (
     <div className="page">
       <h1>Результат</h1>
@@ -300,6 +305,7 @@ export function MockPage() {
           </div>
         )}
       </div>
+      <GateStatus qs={qs} scores={scores} rules={rules} />
       <h3>Где потерял баллы</h3>
       <ul>
         {qs
@@ -331,15 +337,45 @@ export function MockPage() {
   );
 }
 
+/** Допуск к доказательствам и потолок оценки — одной строкой под составом билета. */
+function ScoringNote({ rules }: { rules: Scoring }) {
+  if (rules.theoryGate === undefined && rules.scoreCap === undefined) return null;
+  return (
+    <p className="small">
+      {rules.theoryGate !== undefined && (
+        <>
+          Чтобы перейти к доказательствам, нужно сдать не меньше <b>{rules.theoryGate}</b> вопросов по теории — иначе коллоквиум на этом заканчивается.{' '}
+        </>
+      )}
+      {rules.scoreCap !== undefined && <>Максимальная оценка — {fmt(rules.scoreCap)}, лишние баллы билета — запас.</>}
+    </p>
+  );
+}
+
+/** Сколько вопросов по теории сдано и засчитываются ли доказательства. */
+function GateStatus({ qs, scores, rules }: { qs: TicketQuestion[]; scores: Record<string, number>; rules: Scoring }) {
+  if (rules.theoryGate === undefined) return null;
+  const passed = theoryPassed(qs, scores);
+  const total = qs.filter((q) => q.section === 'Определения').length;
+  return (
+    <p className={`small ${gateFailed(qs, scores, rules) ? 'timer-over' : ''}`}>
+      Теория сдана: <b>{passed}</b> из {total} (засчитан — полный балл за вопрос), нужно {rules.theoryGate}.{' '}
+      {gateFailed(qs, scores, rules) ? 'Доказательства не засчитываются.' : 'Доказательства засчитываются.'}
+    </p>
+  );
+}
+
 /** Строки таблицы «состав билета»: по layout экзамена или по демо-билету матана. */
 function ticketBlocks(layout: TicketLayout | undefined, mode: Mode): [string, string | number, string][] {
   if (layout) {
-    return [
+    const proofs = layout.proofPoints?.length ?? layout.proofs;
+    const rows: [string, string | number, string][] = [
       ['Определения', layout.definitions, 'по 0,5'],
       ['Формулировки', layout.statements, 'по 0,5'],
-      ['Доказательства', layout.proofs, '0,5 + 2'],
+      ['Доказательства', proofs, layout.proofPoints ? [...layout.proofPoints].sort((a, b) => a - b).map(fmt).join(' / ') : '0,5 + 2'],
       [`Задачи: ${layout.taskSlots.map((s) => s.label.toLowerCase()).join('; ')}`, layout.taskSlots.length, 'по 1'],
     ];
+    return rows.filter(([, n]) => n !== 0);
   }
   const all = mode === 'all';
   return [

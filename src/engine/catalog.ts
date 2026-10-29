@@ -35,6 +35,8 @@ export class Catalog {
         this.unitById.set(unit.id, { unit, topic });
         for (const kind of ['definition', 'statement', 'proof'] as const) {
           const f = unit[kind];
+          // Формулировка теоремы — не отдельный вопрос, если в билете её спрашивают только с доказательством.
+          if (kind === 'statement' && unit.proof && exam.statementQuestions === false) continue;
           if (f) this.facets.push({ key: `${unit.id}:${kind}`, unit, topic, kind, level: f.level });
         }
       }

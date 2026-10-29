@@ -5,12 +5,15 @@ import { useCat, usePath } from '../exam';
 import { useProgress } from '../store/progress';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Countdown } from './HubPage';
+import { count } from '../plural';
 
 const KINDS: [Kind, string][] = [
   ['definition', 'Опр.'],
   ['statement', 'Форм.'],
   ['proof', 'Док.'],
 ];
+
+const KIND_PLURAL: Record<Kind, string> = { definition: 'определения', statement: 'формулировки', proof: 'доказательства' };
 
 export function HomePage() {
   const cat = useCat();
@@ -127,21 +130,23 @@ export function HomePage() {
         <div className="panel">
           <h3>Теория</h3>
           <ProgressBar r={all} />
-          <p className="small muted">{all.total} вопросов: определения, формулировки, доказательства.</p>
+          <p className="small muted">{count(all.total, 'вопрос', 'вопроса', 'вопросов')}: {kinds.map(([k]) => KIND_PLURAL[k]).join(', ')}.</p>
         </div>
-        <div className="panel">
-          <h3>Задачи</h3>
-          <ProgressBar r={ts} />
-          <p className="small muted">
-            {ts.total} задач в стиле {isTest ? 'контрольной' : 'билета'}.
-            {exam.features.includes('quant') && (
-              <>
-                {' '}
-                <Link to={p('/quant')}>Тренажёр кванторов</Link> генерирует бесконечно.
-              </>
-            )}
-          </p>
-        </div>
+        {exam.features.includes('tasks') && (
+          <div className="panel">
+            <h3>Задачи</h3>
+            <ProgressBar r={ts} />
+            <p className="small muted">
+              {count(ts.total, 'задача', 'задачи', 'задач')} в стиле {isTest ? 'контрольной' : 'билета'}.
+              {exam.features.includes('quant') && (
+                <>
+                  {' '}
+                  <Link to={p('/quant')}>Тренажёр кванторов</Link> генерирует бесконечно.
+                </>
+              )}
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

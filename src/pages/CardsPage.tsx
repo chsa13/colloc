@@ -10,6 +10,7 @@ import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Md } from '../ui/Md';
 import { Grade } from '../ui/Grade';
 import { LevelMark, StatusDot } from '../ui/LevelSwitch';
+import { count } from '../plural';
 
 const ASK: Record<Kind, string> = {
   definition: 'Дай определение',
@@ -58,7 +59,7 @@ export function CardsPage() {
       (f) => kinds.includes(f.kind) && (!topic || f.topic.id === topic) && !(f.kind === 'statement' && withProof.has(f.unit.id)),
     );
     const weak = (key: string) => ['weak', 'shaky'].includes(s.items[key]?.status ?? 'new');
-    if (onlyWeak) pool = pool.filter((f) => weak(f.key) || (isCombined(f) && weak(`${f.unit.id}:statement`)));
+    if (onlyWeak) pool = pool.filter((f) => weak(f.key) || (isCombined(cat, f) && weak(`${f.unit.id}:statement`)));
     return orderByPriority(pool, (f) => f.key, s).map((f) => f.key);
   };
   const fresh = (): CardSession => ({ fk: filterKey, keys: buildQueue(), pos: 0, step: 0, updated: Date.now() });
@@ -108,7 +109,7 @@ export function CardsPage() {
     <div className="page">
       <h1>Карточки</h1>
       <div className="filters">
-        {(['definition', 'statement', 'proof'] as Kind[]).map((k) => (
+        {(['definition', 'statement', 'proof'] as Kind[]).filter((k) => cat.facets.some((f) => f.kind === k)).map((k) => (
           <label key={k} className="chk">
             <input type="checkbox" checked={kinds.includes(k)} onChange={() => toggleKind(k)} /> {KIND_LABEL[k]}
           </label>
@@ -133,7 +134,7 @@ export function CardsPage() {
         </div>
       ) : !card ? (
         <div className="empty">
-          <h2>Круг пройден: {queue.length} карточек</h2>
+          <h2>Круг пройден: {count(queue.length, 'карточка', 'карточки', 'карточек')}</h2>
           <p>
             <button className="primary" onClick={restart}>
               Начать заново
@@ -160,7 +161,7 @@ export function CardsPage() {
           <div className="card-q">
             <div className="card-kind">
               <LevelMark level={card.level} />{' '}
-              {isCombined(card) ? (
+              {isCombined(cat, card) ? (
                 <>
                   Формулировка <StatusDot status={st.items[`${card.unit.id}:statement`]?.status ?? 'new'} /> + доказательство{' '}
                   <StatusDot status={st.items[card.key]?.status ?? 'new'} />
@@ -174,7 +175,7 @@ export function CardsPage() {
             <h2>{card.unit.title}</h2>
             <div className="muted">{askFor(cat, card)}</div>
           </div>
-          {isCombined(card) ? (
+          {isCombined(cat, card) ? (
             <CombinedAnswer card={card} step={step} setStep={setStep} onDone={next} />
           ) : step === 0 ? (
             <button className="reveal" onClick={() => setStep(1)}>
@@ -203,9 +204,12 @@ export function CardsPage() {
   );
 }
 
-/** Теорема, у которой спрашиваются и формулировка, и доказательство. */
-function isCombined(f: Facet): boolean {
-  return f.kind === 'proof' && !!f.unit.statement;
+/**
+ * Теорема, у которой формулировка и доказательство оцениваются по отдельности (формулировка — свой вопрос билета).
+ * Если формулировка отдельным вопросом не бывает, карточка теоремы одна, с одной оценкой.
+ */
+function isCombined(cat: Catalog, f: Facet): boolean {
+  return f.kind === 'proof' && cat.facetByKey.has(`${f.unit.id}:statement`);
 }
 
 const STATUS_WORD: Record<string, string> = { weak: 'не знаю', shaky: 'частично', known: 'знаю' };

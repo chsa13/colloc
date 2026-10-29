@@ -9,6 +9,7 @@ import { Grade } from '../ui/Grade';
 import { ScaleMark, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 import { fmt } from './HomePage';
+import { count } from '../plural';
 
 export function TasksPage() {
   const cat = useCat();
@@ -54,7 +55,7 @@ export function TasksPage() {
             </option>
           ))}
         </select>
-        <span className="muted small">{list.length} задач</span>
+        <span className="muted small">{count(list.length, 'задача', 'задачи', 'задач')}</span>
       </div>
       {list.map((t, i) => (
         <TaskCard key={t.id} task={t} n={i + 1} />

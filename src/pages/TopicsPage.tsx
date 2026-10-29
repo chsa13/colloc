@@ -5,6 +5,7 @@ import { useCat, usePath } from '../exam';
 import { useProgress } from '../store/progress';
 import { UnitCard } from '../ui/FacetView';
 import { ProgressBar } from '../ui/ProgressBar';
+import { count } from '../plural';
 
 export function TopicsPage() {
   const cat = useCat();
@@ -41,7 +42,7 @@ export function TopicsPage() {
           return (
             <Link key={t.id} to={p(`/topic/${t.id}`)} className="topic-card">
               <div className="topic-title">{t.title}</div>
-              <div className="muted small">Лонгрид {t.longread} · {keys.length} вопросов</div>
+              <div className="muted small">{cat.exam.sourceLabel ?? 'Лонгрид'} {t.longread} · {count(keys.length, 'вопрос', 'вопроса', 'вопросов')}</div>
               <ProgressBar r={readiness(keys, st)} />
             </Link>
           );
@@ -83,13 +84,13 @@ export function TopicPage() {
       </div>
       <h1>{topic.title}</h1>
       <p className="muted">
-        Лонгрид {topic.longread}.{' '}
+        {cat.exam.sourceLabel ?? 'Лонгрид'} {topic.longread}.{' '}
         <Link to={p(`/cards?topic=${topic.id}`)}>Учить карточками →</Link>
       </p>
       {units.map((u) => (
         <UnitCard key={u.id} unit={u} mode={st.mode} />
       ))}
-      {hidden > 0 && <p className="muted small">Ещё {hidden} вопросов только продвинутого уровня скрыто.</p>}
+      {hidden > 0 && <p className="muted small">Скрыто вопросов только продвинутого уровня: {hidden}.</p>}
       <div className="pager">
         {idx > 0 && <Link to={p(`/topic/${topics[idx - 1].id}`)}>← {topics[idx - 1].title}</Link>}
         <span />

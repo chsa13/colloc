@@ -1,0 +1,44 @@
+import type { Exam } from '../../src/content/schema';
+import { numbers, sets } from './numbers';
+import { reals } from './reals';
+import { asymptotics, seqLimit } from './sequences';
+import { completeness } from './completeness';
+import { topology, compactness } from './topology';
+import { continuity, funcLimits, compactFunctions } from './functions';
+import { how } from './how';
+
+export const pilotColloc: Exam = {
+  id: 'pilot-colloc',
+  subject: 'Математический анализ, пилотный поток',
+  kind: 'Коллоквиум',
+  short: 'Коллок пилотного потока',
+  icon: 'ℝ',
+  dates: ['2026-11-10', '2026-11-10'],
+  when: '10 ноября (предварительно)',
+  format: '5 вопросов по теории + 4 теоремы с доказательствами, подготовка ~45 минут, без материалов',
+  scope: 'Конспект Лопаткина, главы 1, 2, 4: построение чисел, последовательности, топология прямой, непрерывность — 42 вопроса и 40 теорем',
+  levels: false,
+  star: 'black',
+  features: ['topics', 'cards', 'proofs', 'mock'],
+  mock: {
+    kind: 'ticket',
+    title: 'Пробный билет',
+    prepMin: 45,
+    answerMin: 30,
+    layout: {
+      definitions: 5,
+      statements: 0,
+      proofs: 4,
+      proofPoints: [1.5, 2, 2, 2.5],
+      theoryGate: 4,
+      scoreCap: 10,
+      taskSlots: [],
+    },
+  },
+  tasksNote: '',
+  statementQuestions: false,
+  sourceLabel: 'Конспект, гл.',
+  how,
+  topics: [numbers, sets, reals, asymptotics, seqLimit, completeness, topology, compactness, continuity, funcLimits, compactFunctions],
+  tasks: [],
+};

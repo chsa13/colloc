@@ -8,6 +8,9 @@ import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Grade } from '../ui/Grade';
 import { LevelMark, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
+import { count } from '../plural';
+import { fmt } from './HomePage';
+import type { MockSpec } from '../content/schema';
 
 export function ProofsPage() {
   const cat = useCat();
@@ -20,9 +23,7 @@ export function ProofsPage() {
     <div className="page">
       <h1>Доказательства</h1>
       <p className="muted">
-        {cat.exam.mock.kind === 'ticket'
-          ? 'В билете за доказательство дают 0,5 за формулировку + 2 балла (⚫: + 3).'
-          : 'На контрольной надо объяснять, почему ответ верен, — а для этого нужно понимать, почему верны теоремы.'}{' '}
+        {proofRule(cat.exam.mock)}{' '}
         Тренируй по шагам: вспомни шаг → открой → сравни.
       </p>
       {nextUp && (
@@ -44,8 +45,8 @@ export function ProofsPage() {
                   <StatusDot status={st.items[p.key]?.status ?? 'new'} /> <LevelMark level={p.level} />{' '}
                   <Link to={path(`/proofs/${p.unit.id}`)}>{p.unit.title}</Link>{' '}
                   <span className="muted small">
-                    · {p.unit.proof!.steps.length} шагов
-                    {cat.lemmaChain(p.unit).length > 0 && ` + ${cat.lemmaChain(p.unit).length} лемм.`}
+                    · {count(p.unit.proof!.steps.length, 'шаг', 'шага', 'шагов')}
+                    {cat.lemmaChain(p.unit).length > 0 && ` + ${count(cat.lemmaChain(p.unit).length, 'лемма', 'леммы', 'лемм')}`}
                   </span>
                   {p.unit.aux && <span className="tag">лемма</span>}
                 </li>
@@ -104,7 +105,7 @@ export function ProofPage() {
         <div className="small muted">
           Как ты знаешь это доказательство? Сейчас: <StatusDot status={st.items[key]?.status ?? 'new'} />
         </div>
-        <Grade itemKey={key} current={st.items[key]?.status} alsoKeys={unit.statement ? [`${unit.id}:statement`] : []} />
+        <Grade itemKey={key} current={st.items[key]?.status} alsoKeys={cat.facetByKey.has(`${unit.id}:statement`) ? [`${unit.id}:statement`] : []} />
       </div>
       {nextProof && nextProof.unit.id !== unit.id && (
         <p>
@@ -240,4 +241,15 @@ function OrderMode({ unitId }: { unitId: string }) {
 
 function lemmaLabel(title: string) {
   return /^лемма/i.test(title) ? title : `Лемма: ${title}`;
+}
+
+/** Сколько дают за доказательство в билете — по конфигу пробника. */
+function proofRule(mock: MockSpec): string {
+  if (mock.kind === 'test') return 'На контрольной надо объяснять, почему ответ верен, — а для этого нужно понимать, почему верны теоремы.';
+  const points = mock.layout?.proofPoints;
+  if (points) {
+    const sorted = [...points].sort((a, b) => a - b).map(fmt);
+    return `В билете ${count(points.length, 'теорема', 'теоремы', 'теорем')}: ${sorted.slice(0, -1).join(', ')} и ${sorted[sorted.length - 1]} балла — за формулировку вместе с доказательством.`;
+  }
+  return mock.layout ? 'В билете за доказательство дают 0,5 за формулировку + 2 балла.' : 'В билете за доказательство дают 0,5 за формулировку + 2 балла (⚫: + 3).';
 }

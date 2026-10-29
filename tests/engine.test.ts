@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { exams } from '../content';
 import { catalogOf } from '../src/engine/catalog';
-import { generateMock, generateTicket, totals } from '../src/engine/ticket';
+import { gateFailed, generateMock, generateTicket, scoringOf, totals } from '../src/engine/ticket';
 import { makeQuestion, randomProblem, type PointType, type ValueType } from '../src/engine/quant';
 
 const matan = catalogOf(exams.find((e) => e.id === 'matan-colloc')!);
@@ -86,5 +86,50 @@ describe('layout ticket (mia-colloc)', () => {
       const max = qs.reduce((s, q) => s + q.parts.reduce((a, p) => a + p.max, 0), 0);
       expect(max).toBe(10);
     }
+  });
+});
+
+describe('pilot-colloc ticket', () => {
+  const cat = catalogOf(exams.find((e) => e.id === 'pilot-colloc')!);
+  const rules = scoringOf(cat);
+  const full = (qs: ReturnType<typeof generateMock>) =>
+    Object.fromEntries(qs.flatMap((q) => q.parts.map((p, i) => [`${q.n}:${i}`, p.max])));
+
+  it('5 theory questions and 4 proofs worth 1,5 / 2 / 2 / 2,5, longer proofs weigh more', () => {
+    for (let i = 0; i < 30; i++) {
+      const qs = generateMock(cat, 'basic');
+      expect(qs.filter((q) => q.section === 'Определения').length).toBe(5);
+      const proofs = qs.filter((q) => q.section === 'Доказательства');
+      expect(proofs.map((q) => q.parts[0].max)).toEqual([1.5, 2, 2, 2.5]);
+      const len = proofs.map((q) => cat.proofPlan(q.facet!.unit).length);
+      expect([...len].sort((a, b) => a - b)).toEqual(len);
+      const units = qs.map((q) => q.facet!.unit.id);
+      expect(new Set(units).size).toBe(units.length);
+    }
+  });
+
+  it('full marks give 10 (cap), fewer than 4 theory answers lock the proofs', () => {
+    const qs = generateMock(cat, 'basic');
+    const scores = full(qs);
+    expect(totals(qs, scores, rules)).toMatchObject({ red: 10, redMax: 10 });
+    const theory = qs.filter((q) => q.section === 'Определения');
+    const failTwo = { ...scores, [`${theory[0].n}:0`]: 0, [`${theory[1].n}:0`]: 0.25 };
+    expect(gateFailed(qs, failTwo, rules)).toBe(true);
+    expect(totals(qs, failTwo, rules).red).toBe(1.75);
+    const failOne = { ...scores, [`${theory[0].n}:0`]: 0 };
+    expect(gateFailed(qs, failOne, rules)).toBe(false);
+    expect(totals(qs, failOne, rules).red).toBe(10);
+  });
+});
+
+describe('pilot-colloc: no statement-only questions', () => {
+  const cat = catalogOf(exams.find((e) => e.id === 'pilot-colloc')!);
+  it('theorem statements are not separate facets; 42 theory + 41 proofs', () => {
+    expect(cat.facets.filter((f) => f.kind === 'statement')).toEqual([]);
+    expect(cat.facets.length).toBe(83);
+  });
+  it('other exams keep statements', () => {
+    const mia = catalogOf(exams.find((e) => e.id === 'mia-colloc')!);
+    expect(mia.facets.some((f) => f.kind === 'statement' && f.unit.proof)).toBe(true);
   });
 });

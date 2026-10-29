@@ -271,3 +271,21 @@ describe('mia-colloc', () => {
     expect(units.filter((u) => u.proof).length).toBe(10);
   });
 });
+
+describe('pilot-colloc', () => {
+  const pilot = exams.find((e) => e.id === 'pilot-colloc')!;
+  const units = unitsOf(pilot).filter((u) => !u.aux);
+
+  it('covers the whole question list: 42 theory questions and 40 theorems', () => {
+    expect(units.filter((u) => u.definition).length).toBe(42);
+    expect(units.filter((u) => u.proof).length).toBe(40);
+    for (const u of units.filter((x) => x.proof)) expect(u.statement, u.id).toBeTruthy();
+  });
+
+  it('ticket: 5 × 0,5 + 1,5 + 2 + 2 + 2,5, capped at 10', () => {
+    const l = pilot.mock.kind === 'ticket' ? pilot.mock.layout! : undefined;
+    expect(0.5 * l!.definitions + l!.proofPoints!.reduce((a, b) => a + b, 0)).toBe(10.5);
+    expect(l!.scoreCap).toBe(10);
+    expect(l!.theoryGate).toBe(4);
+  });
+});
