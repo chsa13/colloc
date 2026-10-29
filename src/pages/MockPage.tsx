@@ -59,10 +59,10 @@ function useNow(active: boolean) {
   return now;
 }
 
+/** Оставшееся время «м:сс»; после окончания стоит на 0:00, а не уходит в минус. */
 function clock(ms: number) {
-  const neg = ms < 0;
-  const s = Math.floor(Math.abs(ms) / 1000);
-  return `${neg ? '−' : ''}${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const s = Math.ceil(Math.max(0, ms) / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 const SECTIONS: Section[] = ['Определения', 'Формулировки', 'Доказательства', 'Задачи'];
@@ -227,8 +227,8 @@ export function MockPage() {
     const left = started + PREP_MIN * 60_000 - now;
     return (
       <div className="page">
-        <div className={`timer ${left < 0 ? 'timer-over' : left < 5 * 60_000 ? 'timer-warn' : ''}`}>
-          {isTest ? 'Контрольная' : 'Подготовка'}: {clock(left)} {left < 0 && '— время вышло'}
+        <div className={`timer ${left <= 0 ? 'timer-over' : left < 5 * 60_000 ? 'timer-warn' : ''}`}>
+          {isTest ? 'Контрольная' : 'Подготовка'}: {left <= 0 ? 'время вышло' : clock(left)}
         </div>
         <TicketList qs={qs} />
         <div className="row">
@@ -246,8 +246,8 @@ export function MockPage() {
     const t = totals(qs, scores);
     return (
       <div className="page">
-        <div className={`timer ${left < 0 ? 'timer-over' : ''}`}>
-          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${clock(left)}`} · {exam.levels ? '🔴 ' : exam.star && <><Star scale={exam.star} />{' '}</>}
+        <div className={`timer ${left <= 0 && ANSWER_MIN !== null ? 'timer-over' : ''}`}>
+          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${left <= 0 ? 'время вышло' : clock(left)}`} · {exam.levels ? '🔴 ' : exam.star && <><Star scale={exam.star} />{' '}</>}
           {fmt(t.red)}/{fmt(t.redMax)}
           {mode === 'all' && exam.levels && ` · ⚫ ${fmt(t.black)}/${fmt(t.blackMax)}`}
         </div>
