@@ -6,6 +6,9 @@ export type Level = 'basic' | 'advanced';
 /** Шкала зачёта в билете: красная (основной) и/или чёрная (продвинутый). */
 export type Scale = 'red' | 'black';
 
+/** Цвет звёздочки: шкалы уровней и цвет курса. */
+export type StarColor = Scale | 'blue';
+
 /** Грань единицы знания — то, что спрашивают отдельным вопросом. */
 export type Kind = 'definition' | 'statement' | 'proof';
 
@@ -122,6 +125,11 @@ export interface Exam {
   scope: string;
   /** Есть ли продвинутый уровень (переключатель 🔴 / 🔴+⚫). */
   levels: boolean;
+  /**
+   * Звёздочка курса у экзамена без уровней — ставится там же, где 🔴/⚫ у экзаменов с уровнями.
+   * Например, blue у «синей» математики (МИА), red у КР по линалу.
+   */
+  star?: StarColor;
   features: Feature[];
   mock: MockSpec;
   /** Пояснение над банком задач. */

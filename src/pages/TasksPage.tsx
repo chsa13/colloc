@@ -6,7 +6,7 @@ import { countActivity } from '../analytics';
 import { useCat } from '../exam';
 import { useProgress, useStore } from '../store/progress';
 import { Grade } from '../ui/Grade';
-import { StatusDot, Stars } from '../ui/LevelSwitch';
+import { ScaleMark, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 import { fmt } from './HomePage';
 
@@ -73,7 +73,7 @@ export function TaskCard({ task, n, showGrade = true }: { task: Task; n?: number
     <article className="task">
       <header className="task-head">
         {n !== undefined && <span className="task-n">{n}</span>}
-        {cat.exam.levels && <Stars scales={task.scales} />}
+        <ScaleMark scales={task.scales} />
         <span className="tag">{TASK_TYPE_LABEL[task.type]}</span>
         <span className="muted small">
           {fmt(task.points)} б. · {cat.topicById.get(task.topic)?.title}

@@ -16,6 +16,7 @@ export const linalKr2: Exam = {
   format: '60 минут письменно, без материалов; фото работы одним PDF в LMS + бумажная версия',
   scope: 'Недели 6–8: пространства и базисы, линейные отображения и матрицы, ядро, образ, прямая сумма',
   levels: false,
+  star: 'red',
   features: ['topics', 'cards', 'proofs', 'tasks', 'mock'],
   mock: {
     kind: 'test',

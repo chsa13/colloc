@@ -4,7 +4,7 @@ import type { Feature } from './content/schema';
 import { trackPage } from './analytics';
 import { catalogOf, examById } from './engine/catalog';
 import { ExamProvider, useCat, usePath } from './exam';
-import { LevelSwitch } from './ui/LevelSwitch';
+import { ExamStars, LevelSwitch } from './ui/LevelSwitch';
 import { HubPage } from './pages/HubPage';
 import { HomePage } from './pages/HomePage';
 import { TopicsPage, TopicPage } from './pages/TopicsPage';
@@ -102,7 +102,7 @@ function ExamShell() {
             </NavLink>
             <span className="brand-sep">/</span>
             <NavLink to={p('/')} className="brand">
-              <span className="brand-mark">{exam.icon}</span> {exam.short}
+              <span className="brand-mark">{exam.icon}</span> {exam.short} <ExamStars exam={exam} />
             </NavLink>
           </div>
           {exam.levels && <LevelSwitch />}
@@ -141,8 +141,7 @@ function Footer({ exam = false }: { exam?: boolean }) {
     <footer className="foot">
       {exam && <ExamFooterLinks />}
       <span className="muted">
-        Неофициальный конспект, составленный студентами по программе курсов; не заменяет лонгриды. Прогресс хранится только в этом браузере;
-        сайт собирает анонимную статистику посещений — без cookies и личных данных.
+        Неофициальный конспект, составленный студентами по программе курсов; не заменяет лонгриды. Прогресс хранится только в этом браузере.
       </span>
     </footer>
   );

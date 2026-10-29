@@ -9,7 +9,7 @@ import { useProgress, useStore } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Md } from '../ui/Md';
 import { Grade } from '../ui/Grade';
-import { LevelBadge, StatusDot } from '../ui/LevelSwitch';
+import { LevelMark, StatusDot } from '../ui/LevelSwitch';
 
 const ASK: Record<Kind, string> = {
   definition: 'Дай определение',
@@ -159,7 +159,7 @@ export function CardsPage() {
           </div>
           <div className="card-q">
             <div className="card-kind">
-              {cat.exam.levels && <LevelBadge level={card.level} />}{' '}
+              <LevelMark level={card.level} />{' '}
               {isCombined(card) ? (
                 <>
                   Формулировка <StatusDot status={st.items[`${card.unit.id}:statement`]?.status ?? 'new'} /> + доказательство{' '}

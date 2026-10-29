@@ -8,6 +8,7 @@
   --accent: #e2421b;
   --accent-soft: #fde9e3;
   --black-star: #1c1b19;
+  --blue-star: #2563d9;
   --known: #2f9e5b;
   --shaky: #e0a21b;
   --weak: #d9472b;
@@ -30,6 +31,7 @@
     --accent: #ff6a43;
     --accent-soft: #3a2119;
     --black-star: #ecebe7;
+    --blue-star: #6f9dff;
     --known: #4cc27c;
     --shaky: #f0b73a;
     --weak: #ff6a4d;
@@ -374,9 +376,26 @@ select,
 .star-black {
   color: var(--black-star);
 }
+.star-blue {
+  color: var(--blue-star);
+}
 .stars {
   display: inline-flex;
   gap: 0.1em;
+}
+.exam-stars {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+.exam-stars-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+}
+.exam-stars-plus {
+  color: var(--muted);
+  font-weight: 400;
 }
 .dot {
   display: inline-block;

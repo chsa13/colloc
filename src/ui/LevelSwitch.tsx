@@ -1,4 +1,5 @@
-import type { Level, Scale } from '../content/schema';
+import type { Exam, Level, Scale, StarColor } from '../content/schema';
+import { useCat } from '../exam';
 import { useProgress, useStore, type Status } from '../store/progress';
 
 export function LevelSwitch() {
@@ -10,17 +11,28 @@ export function LevelSwitch() {
       <button role="radio" aria-checked={mode === 'basic'} className={mode === 'basic' ? 'on' : ''} onClick={() => setMode('basic')}>
         <Star scale="red" /> Основной
       </button>
-      <button role="radio" aria-checked={mode === 'all'} className={mode === 'all' ? 'on' : ''} onClick={() => setMode('all')}>
-        <Star scale="red" />
-        <Star scale="black" /> + продвинутый
+      <button
+        role="radio"
+        aria-checked={mode === 'all'}
+        className={mode === 'all' ? 'on' : ''}
+        onClick={() => setMode('all')}
+        title="Основной + продвинутый"
+      >
+        <RedPlusBlack /> Продвинутый
       </button>
     </div>
   );
 }
 
-export function Star({ scale }: { scale: Scale }) {
+const STAR_TITLE: Record<StarColor, string> = {
+  red: 'Основной уровень',
+  black: 'Продвинутый уровень',
+  blue: 'Синяя математика',
+};
+
+export function Star({ scale }: { scale: StarColor }) {
   return (
-    <span className={`star star-${scale}`} title={scale === 'red' ? 'Основной уровень' : 'Продвинутый уровень'}>
+    <span className={`star star-${scale}`} title={STAR_TITLE[scale]}>
       ✱
     </span>
   );
@@ -38,6 +50,43 @@ export function Stars({ scales }: { scales: Scale[] }) {
       ))}
     </span>
   );
+}
+
+/** «🔴+⚫» — основной вместе с продвинутым. */
+function RedPlusBlack() {
+  return (
+    <span className="exam-stars-pair">
+      <Star scale="red" />
+      <span className="exam-stars-plus">+</span>
+      <Star scale="black" />
+    </span>
+  );
+}
+
+/** Звёздочки у названия экзамена: оба уровня «🔴» и «🔴+⚫» либо звёздочка курса. */
+export function ExamStars({ exam }: { exam: Exam }) {
+  if (exam.levels)
+    return (
+      <span className="exam-stars">
+        <Star scale="red" />
+        <RedPlusBlack />
+      </span>
+    );
+  return exam.star ? <Star scale={exam.star} /> : null;
+}
+
+/** Значок у вопроса: уровень грани (🔴/⚫), а у экзамена без уровней — звёздочка курса. */
+export function LevelMark({ level }: { level: Level }) {
+  const { exam } = useCat();
+  if (exam.levels) return <LevelBadge level={level} />;
+  return exam.star ? <Star scale={exam.star} /> : null;
+}
+
+/** Значок у задачи или вопроса билета: шкалы зачёта, а у экзамена без уровней — звёздочка курса. */
+export function ScaleMark({ scales }: { scales: Scale[] }) {
+  const { exam } = useCat();
+  if (exam.levels) return <Stars scales={scales} />;
+  return exam.star ? <Star scale={exam.star} /> : null;
 }
 
 const STATUS_LABEL: Record<Status, string> = { new: 'новое', weak: 'не знаю', shaky: 'частично', known: 'знаю' };

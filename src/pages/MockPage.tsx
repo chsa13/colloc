@@ -7,7 +7,7 @@ import { trackEvent } from '../analytics';
 import { useCat, usePath } from '../exam';
 import { storageKey, useProgress, useStore, type Mode } from '../store/progress';
 import { FacetBody } from '../ui/FacetView';
-import { Stars } from '../ui/LevelSwitch';
+import { ScaleMark, Star } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 import { fmt } from './HomePage';
 
@@ -247,7 +247,7 @@ export function MockPage() {
     return (
       <div className="page">
         <div className={`timer ${left < 0 ? 'timer-over' : ''}`}>
-          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${clock(left)}`} · {exam.levels && '🔴 '}
+          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${clock(left)}`} · {exam.levels ? '🔴 ' : exam.star && <><Star scale={exam.star} />{' '}</>}
           {fmt(t.red)}/{fmt(t.redMax)}
           {mode === 'all' && exam.levels && ` · ⚫ ${fmt(t.black)}/${fmt(t.blackMax)}`}
         </div>
@@ -370,7 +370,7 @@ function TicketList({ qs }: { qs: TicketQuestion[] }) {
             {list.map((q) => (
               <div key={q.n} className="tq">
                 <div className="tq-head">
-                  {cat.exam.levels && <Stars scales={q.scales} />}
+                  <ScaleMark scales={q.scales} />
                   <span className="tq-n">{q.task && cat.exam.mock.kind === 'test' ? 'Задача' : 'Вопрос'} {q.n}</span>
                   <b>{q.parts.map((p) => fmt(p.max)).join(' + ')} б.</b>
                 </div>
@@ -405,7 +405,7 @@ function AnswerQuestion({
   return (
     <div className="tq">
       <div className="tq-head">
-        {cat.exam.levels && <Stars scales={q.scales} />}
+        <ScaleMark scales={q.scales} />
         <span className="tq-n">{q.task && cat.exam.mock.kind === 'test' ? 'Задача' : 'Вопрос'} {q.n}</span>
         {q.facet && <span className="tag">{KIND_LABEL[q.facet.kind]}</span>}
         {q.task && cat.exam.mock.kind === 'test' && <span className="tag">{TASK_TYPE_LABEL[q.task.type]}</span>}

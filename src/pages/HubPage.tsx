@@ -3,6 +3,7 @@ import { exams } from '../../content';
 import type { Exam } from '../content/schema';
 import { catalogOf, readiness, score, taskKey } from '../engine/catalog';
 import { useProgressOf } from '../store/progress';
+import { ExamStars } from '../ui/LevelSwitch';
 import { ProgressBar } from '../ui/ProgressBar';
 
 const DAY = 86_400_000;
@@ -81,7 +82,9 @@ function ExamCard({ exam }: { exam: Exam }) {
           <span className="exam-subject">{exam.subject}</span>
           <Countdown exam={exam} />
         </div>
-        <div className="exam-title">{exam.kind}</div>
+        <div className="exam-title">
+          {exam.kind} <ExamStars exam={exam} />
+        </div>
         <div className="muted small">
           {exam.when} · {exam.format}
         </div>

@@ -6,7 +6,7 @@ import { useCat, usePath } from '../exam';
 import { useProgress, useStore } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Grade } from '../ui/Grade';
-import { LevelBadge, StatusDot } from '../ui/LevelSwitch';
+import { LevelMark, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 
 export function ProofsPage() {
@@ -41,7 +41,7 @@ export function ProofsPage() {
             <ul className="plist">
               {ps.map((p) => (
                 <li key={p.key}>
-                  <StatusDot status={st.items[p.key]?.status ?? 'new'} /> {cat.exam.levels && <LevelBadge level={p.level} />}{' '}
+                  <StatusDot status={st.items[p.key]?.status ?? 'new'} /> <LevelMark level={p.level} />{' '}
                   <Link to={path(`/proofs/${p.unit.id}`)}>{p.unit.title}</Link>{' '}
                   <span className="muted small">
                     · {p.unit.proof!.steps.length} шагов
@@ -81,7 +81,7 @@ export function ProofPage() {
         <Link to={path('/proofs')}>Доказательства</Link> / {topic.title}
       </div>
       <h1>
-        {cat.exam.levels && <LevelBadge level={unit.proof!.level} />} {unit.title}
+        <LevelMark level={unit.proof!.level} /> {unit.title}
       </h1>
       <div className="tabs">
         <button className={mode === 'steps' ? 'on' : ''} onClick={() => setMode('steps')}>

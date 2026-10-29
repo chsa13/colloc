@@ -5,7 +5,7 @@ import { levelVisible } from '../engine/catalog';
 import { useCat, usePath } from '../exam';
 import type { Mode } from '../store/progress';
 import { useProgress } from '../store/progress';
-import { LevelBadge, StatusDot } from './LevelSwitch';
+import { LevelMark, StatusDot } from './LevelSwitch';
 import { Md } from './Md';
 
 /** Содержимое одной грани: текст определения/формулировки или доказательство по шагам. */
@@ -131,7 +131,6 @@ export function UsesLinks({ unit }: { unit: Unit }) {
 
 /** Карточка единицы в справочнике: все видимые грани + примечания. */
 export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
-  const { exam } = useCat();
   const p = usePath();
   const st = useProgress();
   const kinds = (['definition', 'statement', 'proof'] as const).filter((k) => unit[k]);
@@ -150,7 +149,7 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
         return (
           <section key={k} className={`facet ${visible ? '' : 'facet-hidden'}`}>
             <div className="facet-head">
-              {exam.levels && <LevelBadge level={f.level} />}
+              <LevelMark level={f.level} />
               <span className="kind">{KIND_LABEL[k]}</span>
               <StatusDot status={st.items[key]?.status ?? 'new'} />
               {k === 'proof' && visible && (
