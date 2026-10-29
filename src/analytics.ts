@@ -52,8 +52,18 @@ export function trackPage(path: string, title: string) {
   run((u) => u.track((p) => ({ ...p, url: path, title })));
 }
 
+/** Текущая страница в том же виде, что у просмотров: /linal-kr2/cards (без /exams). */
+function currentPage(): string {
+  const base = import.meta.env.BASE_URL;
+  const path = location.pathname.startsWith(base) ? location.pathname.slice(base.length - 1) : location.pathname;
+  return path || '/';
+}
+
 export function trackEvent(name: string, data?: Payload) {
-  run((u) => u.track(name, data));
+  // Адрес передаём сами: без автотрекинга Umami помнит только адрес, с которого открыли сайт
+  // (у старых ссылок — с #/), и все события приписывал бы ему.
+  const url = currentPage();
+  run((u) => u.track((p) => ({ ...p, url, name, data })));
 }
 
 // Активность («насколько много пользуются») копим и шлём сводкой раз в несколько минут
