@@ -12,7 +12,7 @@
 
 | Поле | Что это |
 |---|---|
-| `id` | часть адреса: `#/<id>/cards` |
+| `id` | часть адреса: `/<id>/cards` |
 | `subject`, `kind`, `short`, `icon` | предмет, «Коллоквиум» / «Контрольная работа 2», название для шапки, значок |
 | `dates`, `when`, `format`, `scope` | даты (для обратного отсчёта на главной), формат и что входит — по-человечески |
 | `levels` | есть ли продвинутый уровень (переключатель 🔴 / 🔴+⚫) |
@@ -37,7 +37,7 @@
 ### А.3 Архитектура
 
 ```
-Vite + React + TypeScript   — SPA, HashRouter: #/ — список экзаменов, #/<id>/… — раздел экзамена
+Vite + React + TypeScript   — SPA, BrowserRouter с base /exams/: / — список экзаменов, /<id>/… — раздел экзамена. Для GitHub Pages сборка кладёт копию index.html на каждый адрес и 404.html (vite.config.ts); старые ссылки с #/ переадресуются (main.tsx). Ссылки в текстах — от корня сайта: [Карточки](/<id>/cards)
 KaTeX + marked              — формулы и Markdown
 content/<id>/*.ts           — контент, типизирован схемой src/content/schema.ts
 localStorage                — прогресс, отдельно на экзамен (экспорт/импорт JSON)
@@ -64,7 +64,7 @@ tests/                      # контент, движок, исходники
 
 Ключи localStorage: `exams:<id>:<progress|cards|mock>:v1`.
 
-Статистика — Umami Cloud (`src/analytics.ts`, скрипт в `index.html`), без cookies. Просмотры страниц шлём вручную при смене маршрута (HashRouter), события: `mock-start`, `mock-finish` (exam, percent) и `activity` — сводка раз в 5 минут и при уходе со страницы (exam, theory — оценённые карточки и доказательства, tasks — открытые решения). На localhost не работает (`data-domains`).
+Статистика — Umami Cloud (`src/analytics.ts`, скрипт в `index.html`), без cookies. Просмотры страниц шлём вручную при смене маршрута, события: `mock-start`, `mock-finish` (exam, percent) и `activity` — сводка раз в 5 минут и при уходе со страницы (exam, theory — оценённые карточки и доказательства, tasks — открытые решения). На localhost не работает (`data-domains`).
 
 У коллоквиума по матану оставлены старые ключи
 (`colloc-matan-v1` и т.д.) — сайт переехал с `/colloc` на `/exams`, но домен тот же, и прогресс сохранился.

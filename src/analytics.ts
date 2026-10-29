@@ -1,6 +1,6 @@
 // Анонимная статистика посещений через Umami (без cookies и личных данных).
-// Скрипт подключён в index.html с data-auto-track="false": сайт на HashRouter, поэтому
-// просмотры страниц отправляем сами. На localhost скрипт не работает (data-domains).
+// Скрипт подключён в index.html с data-auto-track="false": просмотры страниц
+// отправляем сами при смене адреса внутри сайта (без перезагрузки страницы). На localhost скрипт не работает (data-domains).
 
 type Payload = Record<string, unknown>;
 type Umami = { track: (eventOrFn?: string | ((p: Payload) => Payload), data?: Payload) => void };

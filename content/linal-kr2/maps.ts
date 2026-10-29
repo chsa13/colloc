@@ -208,7 +208,7 @@ $$M'=C_{\mathcal B'\leftarrow\mathcal B}\;M\;C_{\mathcal A\leftarrow\mathcal A'}
 
 Пример: $\varphi(x,y)=(2x,3y)$ в базисе $(\mathbf e_1,\mathbf e_2)$ имеет матрицу $\operatorname{diag}(2,3)$, в базисе $(\mathbf e_2,\mathbf e_1)$ — $\operatorname{diag}(3,2)$: эти матрицы подобны.
 
-Матрицы одного оператора в разных базисах [подобны](#/linal-kr2/topic/maps?u=similar).`,
+Матрицы одного оператора в разных базисах [подобны](/linal-kr2/topic/maps?u=similar).`,
       pitfalls: [
         md`$M'=C^{-1}MC$, где $C=C_{\mathcal A\leftarrow\mathcal A'}$ — столбцы $C$ это **новые** базисные векторы в **старых** координатах. Перепутать $C$ и $C^{-1}$ — самая частая ошибка.`,
         'Часто проще посчитать новую матрицу прямо по столбцам (образы новых базисных векторов), чем перемножать три матрицы.',

@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, type ReactElement } from 'react';
 import type { Feature } from './content/schema';
 import { trackPage } from './analytics';
@@ -29,15 +29,37 @@ function ScrollTop() {
   return null;
 }
 
+const BASE = import.meta.env.BASE_URL;
+
+// Ссылки внутри текстов (Markdown) — обычные <a>. Открываем их внутри сайта, без перезагрузки страницы.
+function InternalLinks() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element).closest?.('a');
+      if (!a || a.target || a.hasAttribute('download')) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || !url.pathname.startsWith(BASE)) return;
+      e.preventDefault();
+      navigate(url.pathname.slice(BASE.length - 1) + url.search + url.hash);
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, [navigate]);
+  return null;
+}
+
 export function App() {
   return (
-    <HashRouter>
+    <BrowserRouter basename={BASE.replace(/\/$/, '')}>
       <ScrollTop />
+      <InternalLinks />
       <Routes>
         <Route path="/" element={<HubLayout />} />
         <Route path="/:examId/*" element={<ExamLayout />} />
       </Routes>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 

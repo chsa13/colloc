@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { Catalog } from './engine/catalog';
 
-// Текущий экзамен: задаётся маршрутом /#/<examId>/..., страницы берут из него контент.
+// Текущий экзамен: задаётся маршрутом /<examId>/..., страницы берут из него контент.
 
 const ExamContext = createContext<Catalog | null>(null);
 

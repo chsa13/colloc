@@ -28,6 +28,8 @@ export function renderMd(src: string, inline = false): string {
 
   let html = inline ? (marked.parseInline(text) as string) : (marked.parse(text) as string);
   html = html.replace(/KTXMATH(\d+)KTX/g, (_, i) => math[Number(i)]);
+  // Ссылки внутри сайта пишутся от его корня: [Карточки](/linal-kr2/cards).
+  html = html.replace(/href="\/(?!\/)/g, `href="${import.meta.env.BASE_URL}`);
   cache.set(key, html);
   return html;
 }
