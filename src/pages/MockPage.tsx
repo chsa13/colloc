@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { KIND_LABEL, TASK_TYPE_LABEL } from '../content/schema';
+import { KIND_LABEL, TASK_TYPE_LABEL, type TicketLayout } from '../content/schema';
 import { taskKey, type Catalog } from '../engine/catalog';
 import { generateMock, totals, type Section, type TicketQuestion } from '../engine/ticket';
 import { trackEvent } from '../analytics';
@@ -179,7 +179,15 @@ export function MockPage() {
     return (
       <div className="page">
         <h1>{spec.title}</h1>
-        <p>Билет собирается случайно по структуре демо-версии. Сейчас уровень: <b>{st.mode === 'basic' ? 'основной' : 'основной + продвинутый'}</b>.</p>
+        <p>
+          Билет собирается случайно по структуре демо-версии.
+          {exam.levels && (
+            <>
+              {' '}
+              Сейчас уровень: <b>{st.mode === 'basic' ? 'основной' : 'основной + продвинутый'}</b>.
+            </>
+          )}
+        </p>
         <table className="tbl">
           <thead>
             <tr>
@@ -189,26 +197,13 @@ export function MockPage() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Определения</td>
-              <td>3</td>
-              <td>по 0,5</td>
-            </tr>
-            <tr>
-              <td>Формулировки</td>
-              <td>{st.mode === 'all' ? '3 + 1⚫' : 3}</td>
-              <td>по 0,5</td>
-            </tr>
-            <tr>
-              <td>Доказательства</td>
-              <td>{st.mode === 'all' ? '2 + 1⚫' : 2}</td>
-              <td>0,5 + 2 {st.mode === 'all' && '(⚫: 0,5 + 3)'}</td>
-            </tr>
-            <tr>
-              <td>Задачи</td>
-              <td>{st.mode === 'all' ? '3 + 1⚫' : 3}</td>
-              <td>1–1,5</td>
-            </tr>
+            {ticketBlocks(spec.kind === 'ticket' ? spec.layout : undefined, st.mode).map(([block, count, points]) => (
+              <tr key={block}>
+                <td>{block}</td>
+                <td>{count}</td>
+                <td>{points}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <ol>
@@ -334,6 +329,25 @@ export function MockPage() {
       </div>
     </div>
   );
+}
+
+/** Строки таблицы «состав билета»: по layout экзамена или по демо-билету матана. */
+function ticketBlocks(layout: TicketLayout | undefined, mode: Mode): [string, string | number, string][] {
+  if (layout) {
+    return [
+      ['Определения', layout.definitions, 'по 0,5'],
+      ['Формулировки', layout.statements, 'по 0,5'],
+      ['Доказательства', layout.proofs, '0,5 + 2'],
+      [`Задачи: ${layout.taskSlots.map((s) => s.label.toLowerCase()).join('; ')}`, layout.taskSlots.length, 'по 1'],
+    ];
+  }
+  const all = mode === 'all';
+  return [
+    ['Определения', 3, 'по 0,5'],
+    ['Формулировки', all ? '3 + 1⚫' : 3, 'по 0,5'],
+    ['Доказательства', all ? '2 + 1⚫' : 2, all ? '0,5 + 2 (⚫: 0,5 + 3)' : '0,5 + 2'],
+    ['Задачи', all ? '3 + 1⚫' : 3, '1–1,5'],
+  ];
 }
 
 function questionTitle(cat: Catalog, q: TicketQuestion): string {

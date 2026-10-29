@@ -73,3 +73,18 @@ describe('quantifiers', () => {
     }
   });
 });
+
+describe('layout ticket (mia-colloc)', () => {
+  it('follows the layout: 4 definitions, 3 statements, 1 proof, one task per slot', () => {
+    const cat = catalogOf(exams.find((e) => e.id === 'mia-colloc')!);
+    for (let i = 0; i < 30; i++) {
+      const qs = generateMock(cat, 'basic');
+      const count = (s: string) => qs.filter((q) => q.section === s).length;
+      expect([count('Определения'), count('Формулировки'), count('Доказательства'), count('Задачи')]).toEqual([4, 3, 1, 4]);
+      const units = qs.filter((q) => q.facet).map((q) => q.facet!.unit.id);
+      expect(new Set(units).size).toBe(units.length);
+      const max = qs.reduce((s, q) => s + q.parts.reduce((a, p) => a + p.max, 0), 0);
+      expect(max).toBe(10);
+    }
+  });
+});

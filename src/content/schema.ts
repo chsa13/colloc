@@ -83,11 +83,22 @@ export interface MockSlot {
 }
 
 /**
+ * Состав билета коллоквиума по основному уровню: сколько определений, формулировок и доказательств
+ * и какие задачи (по позиции на задачу). Без него — структура демо-билета коллоквиума по матану.
+ */
+export interface TicketLayout {
+  definitions: number;
+  statements: number;
+  proofs: number;
+  taskSlots: MockSlot[];
+}
+
+/**
  * Пробник. ticket — билет коллоквиума (теория + задачи, подготовка и ответ по таймеру);
  * test — письменная контрольная из задач банка: решаешь по таймеру, потом проверяешь себя.
  */
 export type MockSpec =
-  | { kind: 'ticket'; title: string; prepMin: number; answerMin: number }
+  | { kind: 'ticket'; title: string; prepMin: number; answerMin: number; layout?: TicketLayout }
   | { kind: 'test'; title: string; minutes: number; slots: MockSlot[] };
 
 /** Экзамен (коллоквиум, контрольная…) — всё, что нужно сайту, чтобы собрать для него раздел. */

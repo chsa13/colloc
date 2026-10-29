@@ -1,4 +1,4 @@
-import type { MockSlot, Scale, Task } from '../content/schema';
+import type { MockSlot, Scale, Task, TicketLayout } from '../content/schema';
 import type { Mode } from '../store/progress';
 import type { Catalog, Facet } from './catalog';
 
@@ -43,24 +43,93 @@ function take<T>(pool: T[], n: number, used: Set<string>, id: (x: T) => string):
 /** Пробник экзамена: билет коллоквиума или контрольная — по конфигу экзамена. */
 export function generateMock(cat: Catalog, mode: Mode): TicketQuestion[] {
   const spec = cat.exam.mock;
-  return spec.kind === 'ticket' ? generateTicket(cat, mode) : generateTest(cat, mode, spec.slots);
+  if (spec.kind === 'test') return generateTest(cat, mode, spec.slots);
+  return spec.layout ? generateLayoutTicket(cat, mode, spec.layout) : generateTicket(cat, mode);
 }
 
-/**
- * Билет по структуре демо-версии коллоквиума:
- * 3 определения, 3(+1⚫) формулировки, 2(+1⚫) доказательства, 3(+1⚫) задачи.
- */
-export function generateTicket(cat: Catalog, mode: Mode): TicketQuestion[] {
-  const usedUnits = new Set<string>();
-  const byUnit = (f: Facet) => f.unit.id;
-  const pick = (kind: Facet['kind'], level: Facet['level'], n: number) =>
+// ---------- Сборка вопросов ----------
+
+type Draft = Omit<TicketQuestion, 'n'>;
+const RED: Scale[] = ['red'];
+const BLACK: Scale[] = ['black'];
+
+const defQ = (facet: Facet, scales: Scale[]): Draft => ({
+  section: 'Определения',
+  scales,
+  parts: [{ label: 'Определение', max: 0.5 }],
+  facet,
+});
+const stmtQ = (facet: Facet, scales: Scale[]): Draft => ({
+  section: 'Формулировки',
+  scales,
+  parts: [{ label: 'Формулировка', max: 0.5 }],
+  facet,
+});
+const proofQ = (facet: Facet, scales: Scale[], proofMax: number): Draft => ({
+  section: 'Доказательства',
+  scales,
+  parts: [
+    { label: 'Формулировка', max: 0.5 },
+    { label: 'Доказательство', max: proofMax },
+  ],
+  facet,
+});
+const taskQ = (task: Task, label?: string): Draft => ({
+  section: 'Задачи',
+  ...(label ? { label } : {}),
+  scales: task.scales,
+  parts: [{ label: 'Решение', max: task.points }],
+  task,
+});
+const numbered = (qs: Draft[]): TicketQuestion[] => qs.map((q, i) => ({ ...q, n: i + 1 }));
+
+/** Выбор граней без повторов единиц (вспомогательные единицы в билет не идут). */
+function facetPicker(cat: Catalog) {
+  const used = new Set<string>();
+  return (kind: Facet['kind'], level: Facet['level'], n: number) =>
     take(
       cat.facets.filter((f) => f.kind === kind && f.level === level && !f.unit.aux),
       n,
-      usedUnits,
-      byUnit,
+      used,
+      (f) => f.unit.id,
     );
+}
 
+/** Задача на позицию: подходит по теме и типу, ещё не взята. */
+function pickForSlot(pool: Task[], slot: MockSlot, used: Set<string>): Task | undefined {
+  const fits = pool.filter((t) => (!slot.topics || slot.topics.includes(t.topic)) && (!slot.types || slot.types.includes(t.type)));
+  return take(fits, 1, used, (x) => x.id)[0];
+}
+
+/** Билет одного уровня по составу из конфига экзамена (без продвинутых вопросов). */
+export function generateLayoutTicket(cat: Catalog, mode: Mode, layout: TicketLayout): TicketQuestion[] {
+  const pick = facetPicker(cat);
+  // Доказательства первыми, чтобы та же теорема не попала в формулировки.
+  const proofs = pick('proof', 'basic', layout.proofs);
+  const defs = pick('definition', 'basic', layout.definitions);
+  const stmts = pick('statement', 'basic', layout.statements);
+
+  const pool = cat.visibleTasks(mode);
+  const usedTasks = new Set<string>();
+  const tasks = layout.taskSlots.flatMap((s) => {
+    const t = pickForSlot(pool, s, usedTasks);
+    return t ? [taskQ(t, s.label)] : [];
+  });
+
+  return numbered([
+    ...defs.map((f) => defQ(f, RED)),
+    ...stmts.map((f) => stmtQ(f, RED)),
+    ...proofs.map((f) => proofQ(f, RED, 2)),
+    ...tasks,
+  ]);
+}
+
+/**
+ * Билет по структуре демо-версии коллоквиума по матану:
+ * 3 определения, 3(+1⚫) формулировки, 2(+1⚫) доказательства, 3(+1⚫) задачи.
+ */
+export function generateTicket(cat: Catalog, mode: Mode): TicketQuestion[] {
+  const pick = facetPicker(cat);
   // Доказательства выбираем первыми, чтобы та же теорема не попала в формулировки.
   const proofsBasic = pick('proof', 'basic', 2);
   const proofsAdv = mode === 'all' ? pick('proof', 'advanced', 1) : [];
@@ -80,45 +149,26 @@ export function generateTicket(cat: Catalog, mode: Mode): TicketQuestion[] {
     ...(mode === 'all' ? take(blackOnly, 1, usedTasks, tid) : []),
   ];
 
-  const qs: Omit<TicketQuestion, 'n'>[] = [
-    ...defs.map((f) => ({ section: 'Определения' as const, scales: ['red'] as Scale[], parts: [{ label: 'Определение', max: 0.5 }], facet: f })),
-    ...stmts.map((f) => ({ section: 'Формулировки' as const, scales: ['red'] as Scale[], parts: [{ label: 'Формулировка', max: 0.5 }], facet: f })),
-    ...stmtsAdv.map((f) => ({ section: 'Формулировки' as const, scales: ['black'] as Scale[], parts: [{ label: 'Формулировка', max: 0.5 }], facet: f })),
-    ...proofsBasic.map((f) => ({
-      section: 'Доказательства' as const,
-      scales: ['red', 'black'] as Scale[],
-      parts: [
-        { label: 'Формулировка', max: 0.5 },
-        { label: 'Доказательство', max: 2 },
-      ],
-      facet: f,
-    })),
-    ...proofsAdv.map((f) => ({
-      section: 'Доказательства' as const,
-      scales: ['black'] as Scale[],
-      parts: [
-        { label: 'Формулировка', max: 0.5 },
-        { label: 'Доказательство', max: 3 },
-      ],
-      facet: f,
-    })),
-    ...tasksPicked.map((t) => ({ section: 'Задачи' as const, scales: t.scales, parts: [{ label: 'Решение', max: t.points }], task: t })),
-  ];
-  return qs.map((q, i) => ({ ...q, n: i + 1 }));
+  return numbered([
+    ...defs.map((f) => defQ(f, RED)),
+    ...stmts.map((f) => stmtQ(f, RED)),
+    ...stmtsAdv.map((f) => stmtQ(f, BLACK)),
+    ...proofsBasic.map((f) => proofQ(f, ['red', 'black'], 2)),
+    ...proofsAdv.map((f) => proofQ(f, BLACK, 3)),
+    ...tasksPicked.map((t) => taskQ(t)),
+  ]);
 }
 
 /** Контрольная: по одной задаче на каждую позицию, без повторов. */
 export function generateTest(cat: Catalog, mode: Mode, slots: MockSlot[]): TicketQuestion[] {
   const used = new Set<string>();
   const pool = cat.visibleTasks(mode);
-  const qs: TicketQuestion[] = [];
-  for (const slot of slots) {
-    const fits = pool.filter((t) => (!slot.topics || slot.topics.includes(t.topic)) && (!slot.types || slot.types.includes(t.type)));
-    const [t] = take(fits, 1, used, (x) => x.id);
-    if (!t) continue;
-    qs.push({ n: qs.length + 1, section: 'Задачи', label: slot.label, scales: t.scales, parts: [{ label: 'Решение', max: t.points }], task: t });
-  }
-  return qs;
+  return numbered(
+    slots.flatMap((slot) => {
+      const t = pickForSlot(pool, slot, used);
+      return t ? [taskQ(t, slot.label)] : [];
+    }),
+  );
 }
 
 export interface Totals {

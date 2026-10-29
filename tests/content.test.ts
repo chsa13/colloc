@@ -52,9 +52,9 @@ describe('exams', () => {
 
   it('mock slots point to existing topics and have matching tasks', () => {
     for (const e of exams) {
-      if (e.mock.kind !== 'test') continue;
+      const slots = e.mock.kind === 'test' ? e.mock.slots : (e.mock.layout?.taskSlots ?? []);
       const topicIds = new Set(e.topics.map((t) => t.id));
-      for (const s of e.mock.slots) {
+      for (const s of slots) {
         for (const t of s.topics ?? []) expect(topicIds.has(t), `${e.id}: ${s.label} -> ${t}`).toBe(true);
         const fits = e.tasks.filter((t) => (!s.topics || s.topics.includes(t.topic)) && (!s.types || s.types.includes(t.type)));
         expect(fits.length, `${e.id}: мало задач для «${s.label}»`).toBeGreaterThanOrEqual(3);
@@ -242,5 +242,32 @@ describe('linal-kr2: task bank', () => {
       expect(t.source, t.id).toBeTruthy();
       expect(t.hints.length, t.id).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('mia-colloc', () => {
+  const mia = exams.find((e) => e.id === 'mia-colloc')!;
+  const units = unitsOf(mia);
+
+  it('ticket layout matches the demo: 4 + 3 + 1 + 4 questions, 10 points', () => {
+    const l = mia.mock.kind === 'ticket' ? mia.mock.layout! : undefined;
+    expect(l).toBeTruthy();
+    const points = 0.5 * (l!.definitions + l!.statements) + 2.5 * l!.proofs + l!.taskSlots.length;
+    expect(points).toBe(10);
+  });
+
+  it('every task is worth 1 point and has a source and a hint', () => {
+    expect(mia.tasks.length).toBeGreaterThanOrEqual(60);
+    for (const t of mia.tasks) {
+      expect(t.points, t.id).toBe(1);
+      expect(t.source, t.id).toBeTruthy();
+      expect(t.hints.length, t.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('has enough items for every ticket block', () => {
+    expect(units.filter((u) => u.definition).length).toBeGreaterThanOrEqual(30);
+    expect(units.filter((u) => u.statement && !u.proof).length).toBeGreaterThanOrEqual(25);
+    expect(units.filter((u) => u.proof).length).toBe(10);
   });
 });
