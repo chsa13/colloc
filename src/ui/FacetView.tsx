@@ -163,7 +163,7 @@ export function UnitCard({ unit, mode }: { unit: Unit; mode: Mode }) {
             {visible ? (
               <FacetBody unit={unit} kind={k} withStatement={false} lemmasInline={false} />
             ) : (
-              <div className="muted small">Только продвинутый уровень — включи «+ продвинутый» вверху, чтобы увидеть.</div>
+              <div className="muted small">Только продвинутый уровень — включи «Продвинутый» вверху, чтобы увидеть.</div>
             )}
           </section>
         );

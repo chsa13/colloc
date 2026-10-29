@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useCat } from '../exam';
 import { useProgress, useStore } from '../store/progress';
-import { LevelSwitch } from '../ui/LevelSwitch';
+import { LevelSwitch, Star } from '../ui/LevelSwitch';
 import { count } from '../plural';
 
 export function SettingsPage() {
@@ -38,14 +38,14 @@ export function SettingsPage() {
         <h3>Уровень</h3>
         <LevelSwitch />
         <p className="muted small">
-          «Основной» прячет вопросы продвинутого уровня (⚫) везде: в справочнике, карточках, задачах и пробном билете.
+          «Основной» прячет вопросы продвинутого уровня (<Star scale="black" />) везде: в справочнике, карточках, задачах и пробном билете.
         </p>
       </section>
       )}
       <section className="panel">
         <h3>Перенос прогресса</h3>
         <p className="muted small">
-          Прогресс хранится только в этом браузере ({count(Object.keys(st.items).length, 'отметка', 'отметки', 'отметок')}, {count(st.mocks.length, 'пробник', 'пробника', 'пробников')}). Чтобы перенести на
+          Прогресс хранится только в этом браузере ({count(Object.keys(st.items).length, 'отметка', 'отметки', 'отметок')}, {count(st.mocks.length, 'пробный вариант', 'пробных варианта', 'пробных вариантов')}). Чтобы перенести на
           другое устройство — скачай файл и загрузи его там.
         </p>
         <div className="row">

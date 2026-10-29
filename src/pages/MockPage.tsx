@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { KIND_LABEL, TASK_TYPE_LABEL, type TicketLayout } from '../content/schema';
 import { taskKey, type Catalog } from '../engine/catalog';
@@ -163,7 +163,7 @@ export function MockPage() {
         </table>
         <ol>
           <li>
-            <b>Работа — {spec.minutes} минут.</b> Решай на бумаге, без конспектов и калькулятора, с обоснованиями.
+            <b>Работа — {spec.minutes} минут.</b> Решай на бумаге, без материалов и калькулятора, с обоснованиями.
           </li>
           <li>
             <b>Проверка.</b> Открывай решение по каждой задаче и честно ставь себе баллы: за ответ без объяснения «почему» — не больше половины.
@@ -187,7 +187,7 @@ export function MockPage() {
           {exam.levels && (
             <>
               {' '}
-              Сейчас уровень: <b>{st.mode === 'basic' ? 'основной' : 'основной + продвинутый'}</b>.
+              Сейчас уровень: <b>{st.mode === 'basic' ? 'основной' : 'продвинутый'}</b>.
             </>
           )}
         </p>
@@ -212,7 +212,7 @@ export function MockPage() {
         <ScoringNote rules={rules} />
         <ol>
           <li>
-            <b>Подготовка — {PREP_MIN} минут.</b> Пиши ответы на бумаге, как на коллоквиуме. Без материалов.
+            <b>Подготовка — {PREP_MIN} минут.</b> Пиши ответы на бумаге, без материалов, как на коллоквиуме.
           </li>
           <li>
             <b>Ответ — {ANSWER_MIN} минут.</b> Открывай эталон по каждому вопросу, сравнивай и честно ставь себе баллы.
@@ -239,7 +239,7 @@ export function MockPage() {
           <button className="primary" onClick={toAnswer}>
             {isTest ? 'Сдать и проверить →' : 'Перейти к ответу →'}
           </button>
-          <button onClick={() => confirm('Бросить пробник?') && setStage('intro')}>Бросить</button>
+          <button onClick={() => confirm('Прервать? Результат не сохранится.') && setStage('intro')}>Прервать</button>
         </div>
       </div>
     );
@@ -251,9 +251,9 @@ export function MockPage() {
     return (
       <div className="page">
         <div className={`timer ${left <= 0 && ANSWER_MIN !== null ? 'timer-over' : ''}`}>
-          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${left <= 0 ? 'время вышло' : clock(left)}`} · {exam.levels ? '🔴 ' : exam.star && <><Star scale={exam.star} />{' '}</>}
+          {ANSWER_MIN === null ? 'Проверка' : `Ответ: ${left <= 0 ? 'время вышло' : clock(left)}`} · {exam.levels ? <><Star scale="red" />{' '}</> : exam.star && <><Star scale={exam.star} />{' '}</>}
           {fmt(t.red)}/{fmt(t.redMax)}
-          {mode === 'all' && exam.levels && ` · ⚫ ${fmt(t.black)}/${fmt(t.blackMax)}`}
+          {mode === 'all' && exam.levels && <> · <Star scale="black" /> {fmt(t.black)}/{fmt(t.blackMax)}</>}
         </div>
         <p className="muted small">
           {isTest
@@ -294,14 +294,14 @@ export function MockPage() {
           <div className="stat-num">
             {fmt(t.red)} / {fmt(t.redMax)}
           </div>
-          <div className="stat-label">{exam.levels ? '🔴 основной уровень' : 'баллов'}</div>
+          <div className="stat-label">{exam.levels ? <><Star scale="red" /> основной уровень</> : 'баллов'}</div>
         </div>
         {mode === 'all' && exam.levels && (
           <div className="stat">
             <div className="stat-num">
               {fmt(t.black)} / {fmt(t.blackMax)}
             </div>
-            <div className="stat-label">⚫ продвинутый уровень</div>
+            <div className="stat-label"><Star scale="black" /> продвинутый уровень</div>
           </div>
         )}
       </div>
@@ -366,10 +366,10 @@ function GateStatus({ qs, scores, rules }: { qs: TicketQuestion[]; scores: Recor
 }
 
 /** Строки таблицы «состав билета»: по layout экзамена или по демо-билету матана. */
-function ticketBlocks(layout: TicketLayout | undefined, mode: Mode): [string, string | number, string][] {
+function ticketBlocks(layout: TicketLayout | undefined, mode: Mode): [string, ReactNode, ReactNode][] {
   if (layout) {
     const proofs = layout.proofPoints?.length ?? layout.proofs;
-    const rows: [string, string | number, string][] = [
+    const rows: [string, ReactNode, ReactNode][] = [
       ['Определения', layout.definitions, 'по 0,5'],
       ['Формулировки', layout.statements, 'по 0,5'],
       ['Доказательства', proofs, layout.proofPoints ? [...layout.proofPoints].sort((a, b) => a - b).map(fmt).join(' / ') : '0,5 + 2'],
@@ -378,11 +378,12 @@ function ticketBlocks(layout: TicketLayout | undefined, mode: Mode): [string, st
     return rows.filter(([, n]) => n !== 0);
   }
   const all = mode === 'all';
+  const black = <Star scale="black" />;
   return [
     ['Определения', 3, 'по 0,5'],
-    ['Формулировки', all ? '3 + 1⚫' : 3, 'по 0,5'],
-    ['Доказательства', all ? '2 + 1⚫' : 2, all ? '0,5 + 2 (⚫: 0,5 + 3)' : '0,5 + 2'],
-    ['Задачи', all ? '3 + 1⚫' : 3, '1–1,5'],
+    ['Формулировки', all ? <>3 + 1 {black}</> : 3, 'по 0,5'],
+    ['Доказательства', all ? <>2 + 1 {black}</> : 2, all ? <>0,5 + 2 ({black}: 0,5 + 3)</> : '0,5 + 2'],
+    ['Задачи', all ? <>3 + 1 {black}</> : 3, '1–1,5'],
   ];
 }
 
@@ -511,15 +512,19 @@ function MockHistory() {
           <tr>
             <th>Дата</th>
             <th>Уровень</th>
-            <th>🔴</th>
-            <th>⚫</th>
+            <th>
+              <Star scale="red" />
+            </th>
+            <th>
+              <Star scale="black" />
+            </th>
           </tr>
         </thead>
         <tbody>
           {[...st.mocks].reverse().map((m) => (
             <tr key={m.date}>
               <td>{when(m.date)}</td>
-              <td>{m.mode === 'basic' ? 'основной' : '+ продвинутый'}</td>
+              <td>{m.mode === 'basic' ? 'основной' : 'продвинутый'}</td>
               <td>
                 {fmt(m.red)}/{fmt(m.redMax)}
               </td>

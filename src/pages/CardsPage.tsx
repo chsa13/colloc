@@ -130,7 +130,7 @@ export function CardsPage() {
 
       {queue.length === 0 ? (
         <div className="empty">
-          {onlyWeak ? `Слабых мест не осталось — отлично! Сними фильтр или пройди пробник: «${cat.exam.mock.title}».` : 'Под эти фильтры ничего не подходит.'}
+          {onlyWeak ? `Слабых мест не осталось — отлично! Сними фильтр или реши «${cat.exam.mock.title}».` : 'Под эти фильтры ничего не подходит.'}
         </div>
       ) : !card ? (
         <div className="empty">

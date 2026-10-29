@@ -3,6 +3,7 @@ import type { Kind } from '../content/schema';
 import { readiness, score, taskKey } from '../engine/catalog';
 import { useCat, usePath } from '../exam';
 import { useProgress } from '../store/progress';
+import { Star } from '../ui/LevelSwitch';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Countdown } from './HubPage';
 import { count } from '../plural';
@@ -37,7 +38,7 @@ export function HomePage() {
           </div>
           <h1>{exam.kind}</h1>
           <p className="muted">
-            {exam.when}. {exam.format}. <Link to={p('/how')}>Как устроено →</Link>
+            {exam.when}. {exam.format}. <Link to={p('/how')}>Как устроено и как готовиться →</Link>
           </p>
         </div>
         <div className="hero-stats">
@@ -55,7 +56,12 @@ export function HomePage() {
             <div className="stat-num">{lastMock ? `${fmt(lastMock.red)}/${fmt(lastMock.redMax)}` : '—'}</div>
             <div className="stat-label">
               {isTest ? 'последняя пробная' : 'последний пробный'}
-              {exam.levels && ' (🔴)'}
+              {exam.levels && (
+                <>
+                  {' '}
+                  <Star scale="red" />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -65,7 +71,7 @@ export function HomePage() {
         {isTest ? (
           <button className="big primary" onClick={() => nav(p('/tasks'))}>
             <span className="big-title">Решать задачи</span>
-            <span className="big-sub">из ДЗ и семинаров, сначала нерешённые</span>
+            <span className="big-sub">сначала нерешённые</span>
           </button>
         ) : (
           <button className="big primary" onClick={() => nav(p('/cards'))}>
@@ -77,8 +83,8 @@ export function HomePage() {
           <span className="big-title">{exam.mock.title}</span>
           <span className="big-sub">
             {exam.mock.kind === 'ticket'
-              ? `${exam.mock.prepMin} минут, затем самопроверка по баллам`
-              : `${exam.mock.minutes} минут на бумаге, затем самопроверка`}
+              ? `${exam.mock.prepMin} минут подготовки, затем самопроверка по баллам`
+              : `${exam.mock.minutes} минут на бумаге, затем самопроверка по баллам`}
           </span>
         </button>
         {isTest ? (
@@ -141,7 +147,7 @@ export function HomePage() {
               {exam.features.includes('quant') && (
                 <>
                   {' '}
-                  <Link to={p('/quant')}>Тренажёр кванторов</Link> генерирует бесконечно.
+                  <Link to={p('/quant')}>Тренажёр кванторов</Link> генерирует их без конца.
                 </>
               )}
             </p>

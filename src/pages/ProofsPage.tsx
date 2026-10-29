@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { orderByPriority } from '../engine/catalog';
 import { shuffle } from '../engine/ticket';
@@ -6,7 +6,7 @@ import { useCat, usePath } from '../exam';
 import { useProgress, useStore } from '../store/progress';
 import { FacetBody, UsesLinks } from '../ui/FacetView';
 import { Grade } from '../ui/Grade';
-import { LevelMark, StatusDot } from '../ui/LevelSwitch';
+import { LevelMark, Star, StatusDot } from '../ui/LevelSwitch';
 import { Md } from '../ui/Md';
 import { count } from '../plural';
 import { fmt } from './HomePage';
@@ -68,7 +68,7 @@ export function ProofPage() {
   const path = usePath();
   const found = cat.unitById.get(id ?? '');
   const [mode, setMode] = useState<TrainMode>('steps');
-  if (!found || !found.unit.proof) return <div className="page">Доказательство не найдено. <Link to={path('/proofs')}>К списку</Link></div>;
+  if (!found || !found.unit.proof) return <div className="page">Доказательство не найдено. <Link to={path('/proofs')}>К списку доказательств</Link></div>;
   const { unit, topic } = found;
   const key = `${unit.id}:proof`;
 
@@ -122,6 +122,9 @@ function StepsMode({ unitId }: { unitId: string }) {
   const p = unit.proof!;
   const plan = cat.proofPlan(unit);
   const lemmas = cat.lemmaChain(unit);
+  // Отдельные 0,5 за формулировку — только в билете, где доказательство оценивается как «0,5 + 2».
+  const { mock } = cat.exam;
+  const stmtPoints = mock.kind === 'ticket' && !mock.layout?.proofPoints ? ' (0,5 балла)' : '';
   const [stmtOpen, setStmtOpen] = useState(false);
   const [ideaOpen, setIdeaOpen] = useState(false);
   const [shown, setShown] = useState(0);
@@ -131,7 +134,7 @@ function StepsMode({ unitId }: { unitId: string }) {
     <div className="trainer">
       {unit.statement && (
         <div className="block">
-          <div className="label">1. Сформулируй теорему (0,5 балла)</div>
+          <div className="label">1. Сформулируй теорему{stmtPoints}</div>
           {stmtOpen ? <Md text={unit.statement.text} /> : <button onClick={() => setStmtOpen(true)}>Показать формулировку</button>}
         </div>
       )}
@@ -244,12 +247,17 @@ function lemmaLabel(title: string) {
 }
 
 /** Сколько дают за доказательство в билете — по конфигу пробника. */
-function proofRule(mock: MockSpec): string {
+function proofRule(mock: MockSpec): ReactNode {
   if (mock.kind === 'test') return 'На контрольной надо объяснять, почему ответ верен, — а для этого нужно понимать, почему верны теоремы.';
   const points = mock.layout?.proofPoints;
   if (points) {
     const sorted = [...points].sort((a, b) => a - b).map(fmt);
     return `В билете ${count(points.length, 'теорема', 'теоремы', 'теорем')}: ${sorted.slice(0, -1).join(', ')} и ${sorted[sorted.length - 1]} балла — за формулировку вместе с доказательством.`;
   }
-  return mock.layout ? 'В билете за доказательство дают 0,5 за формулировку + 2 балла.' : 'В билете за доказательство дают 0,5 за формулировку + 2 балла (⚫: + 3).';
+  if (mock.layout) return 'В билете за доказательство дают 0,5 за формулировку + 2 балла.';
+  return (
+    <>
+      В билете за доказательство дают 0,5 за формулировку + 2 балла (<Star scale="black" />: + 3).
+    </>
+  );
 }

@@ -191,6 +191,11 @@ select,
   color: var(--text);
   font-size: 1.05rem;
 }
+/* Название в шапке — ссылка из значка и текста: подчёркивание прошло бы и под значком, поэтому только цвет. */
+.brand:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
 .brand-mark {
   color: var(--accent);
   font-size: 1.3rem;

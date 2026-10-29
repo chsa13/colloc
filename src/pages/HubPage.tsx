@@ -26,7 +26,7 @@ export function phaseOf(exam: Exam, now = Date.now()): { phase: Phase; days: num
   return { phase: 'past', days: Math.round((t - end) / DAY) };
 }
 
-/** «через 8 дней», «завтра», «идёт сейчас», «прошёл». */
+/** «через 8 дней», «завтра», «идёт сейчас», «прошло». */
 export function Countdown({ exam }: { exam: Exam }) {
   const { phase, days } = phaseOf(exam);
   if (phase === 'now') return <span className="badge badge-now">идёт сейчас</span>;
@@ -51,7 +51,6 @@ export function HubPage() {
         Коллоквиумы и контрольные в ЦУ. Выбери, к чему готовишься: внутри конспект теории, карточки, доказательства по шагам, задачи с
         решениями и пробный вариант на время.
       </p>
-      <p className="muted small">Отметки «знаю / не знаю» сохраняются в твоём браузере, отдельно для каждого экзамена.</p>
       <div className="exam-list">
         {sorted.map((e) => (
           <ExamCard key={e.id} exam={e} />
